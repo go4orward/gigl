@@ -4,40 +4,40 @@ GIGL implements full set of high-level constructs of interactive 2D & 3D graphic
 (such as Camera, Scene, Geometry, Material, Overlay, etc.) entirely in Go, 
 so that they can be easily used in any OpenGL/WebGL environments on native applications or webapps in a browser.
 
-*At the moment, all the _examples are running in WebGL/WASM environment on a browser, 
+*At the moment, all the examples are running in WebGL/WASM environment on a browser, 
 but I plan to experiment with other OpenGL environments on native applications in near future.*
 
 ## How to Build & Run (WebGL/WASM example)
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
-$ make                  # source : '_examples/webgl1st_example.go'
+$ make                  # source : 'examples/webgl1st_example.go'
 ```
-![webgl1st_example result](_assets/xscreen_webgl1st.png)
+![webgl1st_example result](assets/xscreen_webgl1st.png)
 
 2D example: &emsp; _(with animation & user interactions)_
 ```bash
-$ make 2d               # source : '_examples/webgl2d_example.go'
+$ make 2d               # source : 'examples/webgl2d_example.go'
 or
-$ make 2dui             # source : '_examples/webgl2dui_example.go'
+$ make 2dui             # source : 'examples/webgl2dui_example.go'
 ```
-![webgl2d_example result](_assets/xscreen_webgl2d.png)
+![webgl2d_example result](assets/xscreen_webgl2d.png)
 
 3D example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make 3d               # source : '_examples/webgl3d_example.go'
+$ make 3d               # source : 'examples/webgl3d_example.go'
 ```
-![webgl3d_example result](_assets/xscreen_webgl3d.png)
+![webgl3d_example result](assets/xscreen_webgl3d.png)
 
 Globe example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make globe            # source : '_examples/webglglobe_example.go'
+$ make globe            # source : 'examples/webglglobe_example.go'
 ```
-![webglglobe_example result](_assets/xscreen_webglglobe.png)
+![webglglobe_example result](assets/xscreen_webglglobe.png)
 
 ## ToDo List
 
-- _examples for other OpenGL environment on native applications
+- examples for other OpenGL environment on native applications
 - overlay (marker/label) layers for Globe
 - user selection using collision detection with a ray from camera
 - graticules on the globe
