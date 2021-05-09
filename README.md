@@ -11,27 +11,27 @@ but I plan to experiment with other OpenGL environments on native applications i
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
-$ make                  # source : 'examples/webgl1st_example.go'
+$ make                  # source : 'examples/webgl_1st/main.go'
 ```
 ![webgl1st_example result](assets/xscreen_webgl1st.png)
 
 2D example: &emsp; _(with animation & user interactions)_
 ```bash
-$ make 2d               # source : 'examples/webgl2d_example.go'
+$ make 2d               # source : 'examples/webgl_2d/main.go'
 or
-$ make 2dui             # source : 'examples/webgl2dui_example.go'
+$ make 2dui             # source : 'examples/webgl_2dui/main.go'
 ```
 ![webgl2d_example result](assets/xscreen_webgl2d.png)
 
 3D example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make 3d               # source : 'examples/webgl3d_example.go'
+$ make 3d               # source : 'examples/webgl_3d/main.go'
 ```
 ![webgl3d_example result](assets/xscreen_webgl3d.png)
 
 Globe example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make globe            # source : 'examples/webglglobe_example.go'
+$ make globe            # source : 'examples/webgl_globe/main.go'
 ```
 ![webglglobe_example result](assets/xscreen_webglglobe.png)
 
