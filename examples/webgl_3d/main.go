@@ -33,7 +33,6 @@ func main() {
 		mlayer := g3d.NewOverlayMarkerLayer(rc).AddMarkersForTest()
 		scene.AddOverlay(mlayer, llayer)
 	}
-	fmt.Printf("%v\n", scene)
 	camera := g3d.NewPerspectiveCamera(rc.GetWH(), 15, 1.0) // FOV default is 15° (in degree)
 	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
 	renderer := g3d.NewRenderer(rc)     // set up the renderer

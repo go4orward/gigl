@@ -21,7 +21,7 @@ func NewScene(bkg_color string) *Scene {
 }
 
 func (self *Scene) String() string {
-	return fmt.Sprintf("2DScene{objects:%d overlays:%d}\n", len(self.objects), len(self.overlays))
+	return fmt.Sprintf("3DScene{objects:%d overlays:%d}\n", len(self.objects), len(self.overlays))
 }
 
 // ----------------------------------------------------------------------------
