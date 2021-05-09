@@ -3,10 +3,10 @@ package g3d
 import (
 	"math"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
-func NewSceneObject_3DAxes(rc common.GLRenderingContext, length float32) *SceneObject {
+func NewSceneObject_3DAxes(rc gigl.GLRenderingContext, length float32) *SceneObject {
 	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
 	geometry := NewGeometry() // create an empty geometry
 	geometry.SetVertices([][3]float32{{0, 0, 0}, {length, 0, 0}, {0, length, 0}, {0, 0, length}})
@@ -16,7 +16,7 @@ func NewSceneObject_3DAxes(rc common.GLRenderingContext, length float32) *SceneO
 	return NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_CylinderWireframe(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_CylinderWireframe(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a cylinder, to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works)
 	geometry := NewGeometry_Cylinder(6, 0.5, 1.0, 0, true)      // create a cylinder with radius 0.5 and heigt 1.0
@@ -26,7 +26,7 @@ func NewSceneObject_CylinderWireframe(rc common.GLRenderingContext) *SceneObject
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_CubeWithTexture(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_CubeWithTexture(rc gigl.GLRenderingContext) *SceneObject {
 	geometry := NewGeometry_CubeWithTexture(1.0, 1.0, 1.0)
 	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
@@ -35,7 +35,7 @@ func NewSceneObject_CubeWithTexture(rc common.GLRenderingContext) *SceneObject {
 	return NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 }
 
-func NewSceneObject_CubeInstances(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_CubeInstances(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
 	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)                 // create a cube of size 0.08
 	geometry.BuildNormalsForFace()                                 // prepare face normal vectors
@@ -58,7 +58,7 @@ func NewSceneObject_CubeInstances(rc common.GLRenderingContext) *SceneObject {
 	return scnobj
 }
 
-func NewSceneObject_Airplane(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_Airplane(rc gigl.GLRenderingContext) *SceneObject {
 	centers := [][3]float32{{0, -0.025, -1}, {0, -0.025, -0.99}, {0, -0.02, -0.9}, {0, -0.01, -0.6}, {0, 0, +0.0}, {0, 0, +0.8}, {0, 0, +0.9}, {0, 0, +0.99}, {0, 0, +1}}
 	radii := []float32{0, 0.01, 0.04, 0.08, 0.1, 0.1, 0.08, 0.02, 0}
 	wingth := float32(0.02)

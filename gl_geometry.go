@@ -1,4 +1,4 @@
-package common
+package gigl
 
 type GLGeometry interface {
 	IsDataBufferReady() bool

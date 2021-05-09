@@ -1,15 +1,16 @@
 package g2d
 
 import (
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 )
 
 type OverlayMarkerLayer struct {
-	rc      common.GLRenderingContext //
-	Markers []*SceneObject            // list of OverlayMarkers to be rendered (in pixels in CAMERA space)
+	rc      gigl.GLRenderingContext //
+	Markers []*SceneObject          // list of OverlayMarkers to be rendered (in pixels in CAMERA space)
 }
 
-func NewOverlayMarkerLayer(rc common.GLRenderingContext) *OverlayMarkerLayer {
+func NewOverlayMarkerLayer(rc gigl.GLRenderingContext) *OverlayMarkerLayer {
 	self := OverlayMarkerLayer{rc: rc}
 	self.Markers = make([]*SceneObject, 0)
 	return &self
@@ -103,8 +104,8 @@ func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string
 	return marker
 }
 
-func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) common.GLShader {
-	var shader common.GLShader = nil
+func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) gigl.GLShader {
+	var shader gigl.GLShader = nil
 	if !use_poses { // Shader for single instance (located at (0,0))
 		var vertex_shader_code = `
 		precision mediump float;
@@ -193,8 +194,8 @@ func (self *OverlayMarkerLayer) CreateSpriteMarker(imgpath string, color string,
 	return sprite
 }
 
-func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [3]float32, use_poses bool) common.GLShader {
-	var shader common.GLShader = nil
+func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [3]float32, use_poses bool) gigl.GLShader {
+	var shader gigl.GLShader = nil
 	if !use_poses { // Shader for single instance (located at (0,0))
 		var vertex_shader_code = `
 			precision mediump float;

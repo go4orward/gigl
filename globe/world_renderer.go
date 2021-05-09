@@ -1,18 +1,19 @@
 package globe
 
 import (
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g3d"
 	"github.com/go4orward/gigl/g3d/c3d"
 )
 
 type WorldRenderer struct {
-	rc       common.GLRenderingContext // WebGL context
-	renderer *g3d.Renderer             // Renderer for rendering 3D SceneObjects
-	axes     *g3d.SceneObject          // XYZ axes for visual reference (only if required)
+	rc       gigl.GLRenderingContext // WebGL context
+	renderer *g3d.Renderer           // Renderer for rendering 3D SceneObjects
+	axes     *g3d.SceneObject        // XYZ axes for visual reference (only if required)
 }
 
-func NewWorldRenderer(rc common.GLRenderingContext) *WorldRenderer {
+func NewWorldRenderer(rc gigl.GLRenderingContext) *WorldRenderer {
 	renderer := WorldRenderer{rc: rc, renderer: g3d.NewRenderer(rc), axes: nil}
 	return &renderer
 }

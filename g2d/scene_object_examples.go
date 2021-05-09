@@ -3,10 +3,10 @@ package g2d
 import (
 	"math"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
-func NewSceneObject_2DAxes(rc common.GLRenderingContext, length float32) *SceneObject {
+func NewSceneObject_2DAxes(rc gigl.GLRenderingContext, length float32) *SceneObject {
 	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
 	geometry := NewGeometry()                                            // create an empty geometry
 	geometry.SetVertices([][2]float32{{0, 0}, {length, 0}, {0, length}}) // add three vertices
@@ -16,7 +16,7 @@ func NewSceneObject_2DAxes(rc common.GLRenderingContext, length float32) *SceneO
 	return NewSceneObject(geometry, nil, nil, shader, nil)               // set up the scene object (draw LINES)
 }
 
-func NewSceneObject_RedTriangle(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_RedTriangle(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a red triangle with radius 0.5 at (0,0)
 	geometry := NewGeometry_Triangle(0.5)                  // create a triangle with radius 0.5 at (0,0)
 	geometry.BuildDataBuffers(true, false, true)           // build data buffers for vertices and faces
@@ -24,7 +24,7 @@ func NewSceneObject_RedTriangle(rc common.GLRenderingContext) *SceneObject {
 	return NewSceneObject(geometry, nil, nil, nil, shader) // set up the scene object (draw FACES only)
 }
 
-func NewSceneObject_HexagonWireframe(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_HexagonWireframe(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a hexagon with given color and radius 0.5 at (0,0), to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works - for faces with more than 3 vertices)
 	geometry := NewGeometry_Polygon(6, 0.5, 30)                 // create a hexagon with radius 0.5, with 1st vertex at 30 degree from X axis
@@ -34,7 +34,7 @@ func NewSceneObject_HexagonWireframe(rc common.GLRenderingContext) *SceneObject 
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
-func NewSceneObject_RectangleInstancesExample(rc common.GLRenderingContext) *SceneObject {
+func NewSceneObject_RectangleInstancesExample(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates 200*80 instances of a single geometry, each with its own position and color
 	geometry := NewGeometry_Rectangle(0.8)                         // create a rectangle of size 1.0
 	geometry.BuildDataBuffers(true, false, true)                   //

@@ -3,16 +3,17 @@ package g2d
 import (
 	"fmt"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g2d/c2d"
 )
 
 type SceneObject struct {
 	Geometry    *Geometry         // geometry interface
-	Material    common.GLMaterial // material
-	VShader     common.GLShader   // vert shader and its bindings
-	EShader     common.GLShader   // edge shader and its bindings
-	FShader     common.GLShader   // face shader and its bindings
+	Material    gigl.GLMaterial   // material
+	VShader     gigl.GLShader     // vert shader and its bindings
+	EShader     gigl.GLShader     // edge shader and its bindings
+	FShader     gigl.GLShader     // face shader and its bindings
 	modelmatrix common.Matrix3    // model transformation matrix of this SceneObject
 	UseDepth    bool              // depth test flag (default is true)
 	UseBlend    bool              // blending flag with alpha (default is false)
@@ -21,8 +22,8 @@ type SceneObject struct {
 	bbox        [2][2]float32     // bounding box
 }
 
-func NewSceneObject(geometry *Geometry, material common.GLMaterial,
-	vshader common.GLShader, eshader common.GLShader, fshader common.GLShader) *SceneObject {
+func NewSceneObject(geometry *Geometry, material gigl.GLMaterial,
+	vshader gigl.GLShader, eshader gigl.GLShader, fshader gigl.GLShader) *SceneObject {
 	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
 	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
 	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')

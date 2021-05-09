@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g2d"
 )
@@ -73,16 +74,16 @@ func (self *OverlayLabel) SetBackground(bkgtype string) *OverlayLabel {
 // ----------------------------------------------------------------------------
 
 type OverlayLabelLayer struct {
-	rc     common.GLRenderingContext //
-	Labels []*OverlayLabel           //
+	rc     gigl.GLRenderingContext //
+	Labels []*OverlayLabel         //
 
 	// variables shared by all the labels
-	alphabet_geometry *g2d.Geometry     // geometry with single vertex at origin
-	alphabet_texture  common.GLMaterial // alphabet texture
-	alphabet_shader   common.GLShader   // label text shader
+	alphabet_geometry *g2d.Geometry   // geometry with single vertex at origin
+	alphabet_texture  gigl.GLMaterial // alphabet texture
+	alphabet_shader   gigl.GLShader   // label text shader
 }
 
-func NewOverlayLabelLayer(rc common.GLRenderingContext, fontsize int, outlined bool) *OverlayLabelLayer {
+func NewOverlayLabelLayer(rc gigl.GLRenderingContext, fontsize int, outlined bool) *OverlayLabelLayer {
 	self := OverlayLabelLayer{rc: rc} // let 'fontsize' of ALPHABET texture to be 20, by default
 	self.Labels = make([]*OverlayLabel, 0)
 	self.alphabet_geometry = g2d.NewGeometry_Origin() // trivial geometry with single vertex at origin

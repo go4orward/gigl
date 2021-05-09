@@ -3,6 +3,7 @@ package globe
 import (
 	"math"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g3d"
 	"github.com/go4orward/gigl/g3d/c3d"
@@ -15,7 +16,7 @@ type Globe struct {
 	modelmatrix common.Matrix4   // Model matrix of the globe & its layers
 }
 
-func NewGlobe(rc common.GLRenderingContext, bkg_color string) *Globe {
+func NewGlobe(rc gigl.GLRenderingContext, bkg_color string) *Globe {
 	self := Globe{}
 	self.SetBkgColor(bkg_color)
 	self.GSphere = NewSceneObject_Globe(rc)     // globe sphere with texture & vertex normals
@@ -76,7 +77,7 @@ func (self *Globe) Scale(scale float32) *Globe {
 // Globe
 // ----------------------------------------------------------------------------
 
-func NewSceneObject_GlobeWithoutLight(rc common.GLRenderingContext) *g3d.SceneObject {
+func NewSceneObject_GlobeWithoutLight(rc gigl.GLRenderingContext) *g3d.SceneObject {
 	// Globe model with texture UV coordinates (without normal vectors and directional lighting)
 	geometry := build_globe_geometry(1.0, 64, 32, false)            // create globe geometry with texture UVs only
 	geometry.BuildDataBuffers(true, false, true)                    // build data buffers for vertices and faces
@@ -85,7 +86,7 @@ func NewSceneObject_GlobeWithoutLight(rc common.GLRenderingContext) *g3d.SceneOb
 	return g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
 }
 
-func NewSceneObject_Globe(rc common.GLRenderingContext) *g3d.SceneObject {
+func NewSceneObject_Globe(rc gigl.GLRenderingContext) *g3d.SceneObject {
 	// Globe model with texture AND normal vectors (for directional lighting)
 	geometry := build_globe_geometry(1.0, 64, 32, true)             // create globe geometry with vertex normal vectors
 	geometry.BuildDataBuffers(true, false, true)                    // build data buffers for vertices and faces
@@ -135,7 +136,7 @@ func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool
 // GlowRing around the Globe
 // ----------------------------------------------------------------------------
 
-func NewSceneObject_GlowRing(rc common.GLRenderingContext) *g3d.SceneObject {
+func NewSceneObject_GlowRing(rc gigl.GLRenderingContext) *g3d.SceneObject {
 	// GlowRing around the globe, to make the globe stand out against black background.
 	// (Note that GlowRing should be rendered in CAMERA space by Renderer)
 	if true {

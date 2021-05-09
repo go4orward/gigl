@@ -1,10 +1,10 @@
 package g2d
 
 import (
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
-func NewShader_2DAxes(rc common.GLRenderingContext) common.GLShader {
+func NewShader_2DAxes(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for three axes - X(RED) & Y(GREEN) - for visual reference,
 	//   with auto-binded (Proj * View * Model) matrix and XY coordinates
 	var vertex_shader_code = `
@@ -31,7 +31,7 @@ func NewShader_2DAxes(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_MaterialColor(rc common.GLRenderingContext) common.GLShader {
+func NewShader_MaterialColor(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -55,7 +55,7 @@ func NewShader_MaterialColor(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_MaterialTexture(rc common.GLRenderingContext) common.GLShader {
+func NewShader_MaterialTexture(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader with auto-binded color and (Proj * View * Model) matrix
 	var vertex_shader_code = `
 		precision mediump float;
@@ -84,7 +84,7 @@ func NewShader_MaterialTexture(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_InstancePoseColor(rc common.GLRenderingContext) common.GLShader {
+func NewShader_InstancePoseColor(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader with instance pose, for rendering multiple instances of a same geometry
 	var vertex_shader_code = `
 		precision mediump float;

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g3d/c3d"
 )
@@ -636,7 +637,7 @@ func (self *Geometry) IsWebGLBufferReady() bool {
 	return self.wbuffer_vpoints != nil
 }
 
-func (self *Geometry) BuildWebGLBuffers(rc common.GLRenderingContext, for_points bool, for_lines bool, for_faces bool) {
+func (self *Geometry) BuildWebGLBuffers(rc gigl.GLRenderingContext, for_points bool, for_lines bool, for_faces bool) {
 	c := rc.GetConstants()
 	if for_points {
 		self.wbuffer_vpoints = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)

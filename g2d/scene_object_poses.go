@@ -3,7 +3,7 @@ package g2d
 import (
 	"fmt"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
 type SceneObjectPoses struct {
@@ -52,7 +52,7 @@ func (self *SceneObjectPoses) IsWebGLBufferReady() bool {
 	return self.wbuffer != nil
 }
 
-func (self *SceneObjectPoses) BuildWebGLBuffer(rc common.GLRenderingContext) {
+func (self *SceneObjectPoses) BuildWebGLBuffer(rc gigl.GLRenderingContext) {
 	// THIS FUNCTION IS MEANT TO BE CALLED BY RENDERER.
 	c := rc.GetConstants()
 	if self.DataBuffer != nil {

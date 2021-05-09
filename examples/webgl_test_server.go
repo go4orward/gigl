@@ -20,7 +20,7 @@ func main() {
 	})
 
 	// texture images
-	http.Handle("/assets/", http.FileServer(http.Dir(".")))
+	http.Handle("/assets/", http.FileServer(http.Dir("..")))
 
 	// 'wasm_exec.js'
 	exjs, err := ioutil.ReadFile(runtime.GOROOT() + "/misc/wasm/wasm_exec.js")
@@ -32,7 +32,7 @@ func main() {
 	})
 
 	// 'webgl_test.wasm'
-	wasm, err := ioutil.ReadFile("webgl_test.wasm")
+	wasm, err := ioutil.ReadFile("./webgl_test.wasm")
 	if err != nil {
 		log.Fatalf("Could not read wasm file: %s\n", err)
 	}

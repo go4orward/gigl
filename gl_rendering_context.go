@@ -1,4 +1,4 @@
-package common
+package gigl
 
 type GLRenderingContext interface {
 	GetWH() [2]int

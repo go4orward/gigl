@@ -6,15 +6,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 )
 
 type Renderer struct {
-	rc   common.GLRenderingContext
+	rc   gigl.GLRenderingContext
 	axes *SceneObject
 }
 
-func NewRenderer(rc common.GLRenderingContext) *Renderer {
+func NewRenderer(rc gigl.GLRenderingContext) *Renderer {
 	renderer := Renderer{rc: rc, axes: nil}
 	return &renderer
 }
@@ -122,7 +123,7 @@ func (self *Renderer) RenderSceneObject(scnobj *SceneObject, proj *common.Matrix
 	return nil
 }
 
-func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj *common.Matrix4, vwmd *common.Matrix4, draw_mode int, shader common.GLShader) error {
+func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj *common.Matrix4, vwmd *common.Matrix4, draw_mode int, shader gigl.GLShader) error {
 	rc, c := self.rc, self.rc.GetConstants()
 	// 1. Decide which Shader to use
 	if shader == nil {
@@ -188,7 +189,7 @@ func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj 
 }
 
 func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
-	draw_mode int, material common.GLMaterial, proj *common.Matrix4, vwmd *common.Matrix4) error {
+	draw_mode int, material gigl.GLMaterial, proj *common.Matrix4, vwmd *common.Matrix4) error {
 	rc, c := self.rc, self.rc.GetConstants()
 	if umap["location"] == nil {
 		err := errors.New("Failed to bind uniform : call 'shader.CheckBinding()' before rendering")
@@ -276,7 +277,7 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 }
 
 func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
-	draw_mode int, geometry common.GLGeometry, poses *SceneObjectPoses) error {
+	draw_mode int, geometry gigl.GLGeometry, poses *SceneObjectPoses) error {
 	rc, c := self.rc, self.rc.GetConstants()
 	if amap["location"] == nil {
 		err := errors.New("Failed to bind attribute : call 'shader.CheckBinding()' before rendering")

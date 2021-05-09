@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"syscall/js"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
 type WebGLMaterial struct {
@@ -63,7 +63,7 @@ func (self *WebGLMaterial) ShowInfo() {
 // COLOR
 // ----------------------------------------------------------------------------
 
-func (self *WebGLMaterial) SetColorForDrawMode(draw_mode int, color string) common.GLMaterial {
+func (self *WebGLMaterial) SetColorForDrawMode(draw_mode int, color string) gigl.GLMaterial {
 	// 'draw_mode' :  0:common, 1:vertex, 2:edges, 3:faces
 	if color != "" {
 		return self.SetDrawModeColor(draw_mode, parse_color_from_hex_string(color))
@@ -72,7 +72,7 @@ func (self *WebGLMaterial) SetColorForDrawMode(draw_mode int, color string) comm
 	}
 }
 
-func (self *WebGLMaterial) SetDrawModeColor(draw_mode int, color [4]float32) common.GLMaterial {
+func (self *WebGLMaterial) SetDrawModeColor(draw_mode int, color [4]float32) gigl.GLMaterial {
 	switch draw_mode {
 	case 1:
 		self.color[1] = color // vertex color

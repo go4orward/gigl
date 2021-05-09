@@ -1,4 +1,4 @@
-package common
+package gigl
 
 type GLConstants struct {
 	ARRAY_BUFFER         interface{} //

@@ -7,15 +7,15 @@ import (
 	"syscall/js"
 	"unsafe"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
 type WebGLRenderingContext struct {
-	context   js.Value            // WebGLRenderingContext
-	constants *common.GLConstants // WebGL constant values
-	ext_uint  js.Value            // extension for "OES_element_index_uint"
-	ext_angle js.Value            // extension for "ANGLE_instanced_arrays"
-	wh        [2]int              // canvas width & height
+	context   js.Value          // WebGLRenderingContext
+	constants *gigl.GLConstants // WebGL constant values
+	ext_uint  js.Value          // extension for "OES_element_index_uint"
+	ext_angle js.Value          // extension for "ANGLE_instanced_arrays"
+	wh        [2]int            // canvas width & height
 }
 
 func NewWebGLRenderingContext(canvas js.Value) (*WebGLRenderingContext, error) {
@@ -43,18 +43,18 @@ func (self *WebGLRenderingContext) GetContext() js.Value {
 	return self.context
 }
 
-func (self *WebGLRenderingContext) CreateMaterial(source string, options ...interface{}) (common.GLMaterial, error) {
+func (self *WebGLRenderingContext) CreateMaterial(source string, options ...interface{}) (gigl.GLMaterial, error) {
 	return NewWebGLMaterial(self, source, options...)
 }
 
-func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (common.GLShader, error) {
+func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
 	return NewWebGLShader(self, vertex_shader, fragment_shader)
 }
 
-func (self *WebGLRenderingContext) GetConstants() *common.GLConstants {
+func (self *WebGLRenderingContext) GetConstants() *gigl.GLConstants {
 	if self.constants == nil {
 		// get WebGL constants
-		c := common.GLConstants{}
+		c := gigl.GLConstants{}
 		c.ARRAY_BUFFER = self.context.Get("ARRAY_BUFFER")
 		c.BLEND = self.context.Get("BLEND")
 		c.BYTE = self.context.Get("BYTE")

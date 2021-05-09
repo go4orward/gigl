@@ -1,10 +1,10 @@
 package g3d
 
 import (
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
-func NewShader_3DAxes(rc common.GLRenderingContext) common.GLShader {
+func NewShader_3DAxes(rc gigl.GLRenderingContext) gigl.GLShader {
 	var vertex_shader_code = `
 		precision mediump float;
 		uniform mat4 pvm;			// Projection * View * Model matrix
@@ -29,7 +29,7 @@ func NewShader_3DAxes(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_ColorOnly(rc common.GLRenderingContext) common.GLShader {
+func NewShader_ColorOnly(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -52,7 +52,7 @@ func NewShader_ColorOnly(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_NormalColor(rc common.GLRenderingContext) common.GLShader {
+func NewShader_NormalColor(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -88,7 +88,7 @@ func NewShader_NormalColor(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_TextureOnly(rc common.GLRenderingContext) common.GLShader {
+func NewShader_TextureOnly(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -118,7 +118,7 @@ func NewShader_TextureOnly(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_NormalTexture(rc common.GLRenderingContext) common.GLShader {
+func NewShader_NormalTexture(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for (XYZ + UV + NORMAL) Geometry & (TEXTURE) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;
@@ -160,7 +160,7 @@ func NewShader_NormalTexture(rc common.GLRenderingContext) common.GLShader {
 	return shader
 }
 
-func NewShader_InstancePoseColor(rc common.GLRenderingContext) common.GLShader {
+func NewShader_InstancePoseColor(rc gigl.GLRenderingContext) gigl.GLShader {
 	// Shader for (XYZ + NORMAL) Geometry & (COLOR) Material & (DIRECTIONAL) Lighting
 	var vertex_shader_code = `
 		precision mediump float;

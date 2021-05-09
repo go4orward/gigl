@@ -3,15 +3,16 @@ package g3d
 import (
 	"fmt"
 
+	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 )
 
 type SceneObject struct {
-	Geometry    common.GLGeometry // geometry interface
-	Material    common.GLMaterial // material
-	VShader     common.GLShader   // vert shader and its bindings
-	EShader     common.GLShader   // edge shader and its bindings
-	FShader     common.GLShader   // face shader and its bindings
+	Geometry    gigl.GLGeometry   // geometry interface
+	Material    gigl.GLMaterial   // material
+	VShader     gigl.GLShader     // vert shader and its bindings
+	EShader     gigl.GLShader     // edge shader and its bindings
+	FShader     gigl.GLShader     // face shader and its bindings
 	modelmatrix common.Matrix4    //
 	UseDepth    bool              // depth test flag (default is true)
 	UseBlend    bool              // blending flag with alpha (default is false)
@@ -19,8 +20,8 @@ type SceneObject struct {
 	children    []*SceneObject    //
 }
 
-func NewSceneObject(geometry common.GLGeometry, material common.GLMaterial,
-	vshader common.GLShader, eshader common.GLShader, fshader common.GLShader) *SceneObject {
+func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
+	vshader gigl.GLShader, eshader gigl.GLShader, fshader gigl.GLShader) *SceneObject {
 	// 'geometry' : geometric shape (vertices, edges, faces) to be rendered
 	// 'material' : color, texture, or other material properties	: OPTIONAL (can be 'nil')
 	// 'vshader' : shader for VERTICES (POINTS) 					: OPTIONAL (can be 'nil')

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/go4orward/gigl/common"
+	"github.com/go4orward/gigl"
 )
 
 type WebGLShader struct {
@@ -69,7 +69,7 @@ func (self *WebGLShader) String() string {
 	return fmt.Sprintf("Shader{vert:%s frag:%s prog:%s}", vert, frag, prog)
 }
 
-func (self *WebGLShader) Copy() common.GLShader {
+func (self *WebGLShader) Copy() gigl.GLShader {
 	// create a new shader as a copy with empty binding
 	shader := WebGLShader{rc: self.rc, vshader_code: self.vshader_code, fshader_code: self.fshader_code}
 	shader.vert_shader = self.vert_shader

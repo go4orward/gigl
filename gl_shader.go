@@ -1,4 +1,4 @@
-package common
+package gigl
 
 type GLShader interface {
 	String() string
