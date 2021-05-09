@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/go4orward/gigl/common/webgl"
+	"github.com/go4orward/gigl/env/webgl"
 	"github.com/go4orward/gigl/g2d"
 )
 
