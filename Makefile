@@ -1,27 +1,27 @@
 all: server 1st
 
 1st: server
-	GOOS=js GOARCH=wasm go build -o examples/webgl_test.wasm examples/webgl1st_example.go
+	GOOS=js GOARCH=wasm go build -o ./examples/webgl_test.wasm ./examples/webgl_1st
 	cd examples; ./webgl_test_server
 
 2d: server
-	GOOS=js GOARCH=wasm go build -o examples/webgl_test.wasm examples/webgl2d_example.go
+	GOOS=js GOARCH=wasm go build -o ./examples/webgl_test.wasm ./examples/webgl_2d
 	cd examples; ./webgl_test_server
 
 2dui: server
-	GOOS=js GOARCH=wasm go build -o examples/webgl_test.wasm examples/webgl2dui_example.go
+	GOOS=js GOARCH=wasm go build -o ./examples/webgl_test.wasm ./examples/webgl_2dui
 	cd examples; ./webgl_test_server
 
 3d: server
-	GOOS=js GOARCH=wasm go build -o examples/webgl_test.wasm examples/webgl3d_example.go
+	GOOS=js GOARCH=wasm go build -o ./examples/webgl_test.wasm ./examples/webgl_3d
 	cd examples; ./webgl_test_server
 
 globe: server
-	GOOS=js GOARCH=wasm go build -o examples/webgl_test.wasm examples/webglglobe_example.go
+	GOOS=js GOARCH=wasm go build -o ./examples/webgl_test.wasm ./examples/webgl_globe
 	cd examples; ./webgl_test_server
 
 server: 
-	go build -o examples/webgl_test_server examples/webgl_test_server.go
+	go build -o ./examples/webgl_test_server ./examples/webgl_test_server.go
 
 clean:
-	rm examples/webgl_test.wasm examples/webgl_test_server
+	rm ./examples/webgl_test.wasm ./examples/webgl_test_server
