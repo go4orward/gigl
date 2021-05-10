@@ -45,19 +45,18 @@ func main() {
 	if true { // ONLY FOR INTERACTIVE UI
 		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 		// add user interactions (with mouse)
-		wcanvas.SetupEventHandlers()
-		wcanvas.RegisterEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
+		wcanvas.SetEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
 			wxy := camera.UnprojectCanvasToWorld(canvasxy)
 			fmt.Printf("canvas (%d %d)  world (%.2f %.2f)\n", canvasxy[0], canvasxy[1], wxy[0], wxy[1])
 		})
-		wcanvas.RegisterEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
+		wcanvas.SetEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
 			camera.ShowInfo()
 		})
-		wcanvas.RegisterEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
+		wcanvas.SetEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 			wdxy := camera.UnprojectCanvasDeltaToWorld(dxy)
 			camera.Translate(-wdxy[0], -wdxy[1]).ApplyBoundingBox(true, false)
 		})
-		wcanvas.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
+		wcanvas.SetEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
 			if keystat[3] { // ZOOM, if SHIFT key was pressed (ALT,CTRL,META,SHIFT)
 				oldxy := camera.UnprojectCanvasToWorld(canvasxy)
 				camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
@@ -69,11 +68,11 @@ func main() {
 				camera.Translate(0.0, wdxy[1]).ApplyBoundingBox(true, false)
 			}
 		})
-		wcanvas.RegisterEventHandlerForWindowResize(func(w int, h int) {
+		wcanvas.SetEventHandlerForWindowResize(func(w int, h int) {
 			camera.SetAspectRatio(w, h)
 		})
 		// add animation
-		wcanvas.SetupAnimationFrame(func() {
+		wcanvas.SetDrawHandlerForAnimationFrame(func(now float64) {
 			renderer.Clear(scene)               // prepare to render (clearing to white background)
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 1.0)    // render the axes (just for visual reference)

@@ -43,25 +43,32 @@ func main() {
 	if true { // interactive
 		fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 		// add user interactions (with mouse)
-		wcanvas.SetupEventHandlers()
-		wcanvas.RegisterEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
+		wcanvas.SetEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
+			fmt.Printf("%v\n", canvasxy)
+		})
+		wcanvas.SetEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
 			camera.ShowInfo()
 		})
-		wcanvas.RegisterEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
+		wcanvas.SetEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 			camera.RotateAroundPoint(10, float32(dxy[0])*0.2, float32(dxy[1])*0.2)
 		})
-		wcanvas.RegisterEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
+		wcanvas.SetEventHandlerForMouseWheel(func(canvasxy [2]int, scale float32, keystat [4]bool) {
 			camera.SetZoom(scale) // 'scale' in [ 0.01 ~ 1(default) ~ 100.0 ]
 		})
-		wcanvas.RegisterEventHandlerForWindowResize(func(w int, h int) {
+		wcanvas.SetEventHandlerForWindowResize(func(w int, h int) {
 			camera.SetAspectRatio(w, h)
 		})
+		wcanvas.SetEventHandlerForKeyPress(func(key string, code string, keystat [4]bool) {
+			if code == "Space" {
+				fmt.Printf("keypress : %v\n", code)
+			}
+		})
 		// add animation
-		wcanvas.SetupAnimationFrame(func() {
+		wcanvas.SetDrawHandlerForAnimationFrame(func(now float64) {
 			renderer.Clear(scene)               // prepare to render (clearing to white background)
 			renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
 			renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-			// scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
+			scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
 		})
 	}
 	<-make(chan bool) // wait for events (without exiting)
