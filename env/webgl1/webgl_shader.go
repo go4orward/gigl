@@ -1,4 +1,4 @@
-package webgl
+package webgl1
 
 import (
 	"errors"

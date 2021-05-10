@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/go4orward/gigl/env/webgl"
+	"github.com/go4orward/gigl/env/webgl1"
 	"github.com/go4orward/gigl/g2d"
 	"github.com/go4orward/gigl/g2d/c2d"
 )
@@ -12,8 +12,8 @@ import (
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/webgl2dui_example.go'.
-	fmt.Println("Hello WebGL!")                        // printed in the browser console
-	wcanvas, err := webgl.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL!")                         // printed in the browser console
+	wcanvas, err := webgl1.NewWebGLCanvas("wasmcanvas") // ID of canvas element
 	if err != nil {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
