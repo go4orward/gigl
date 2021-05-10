@@ -27,7 +27,7 @@ func main() {
 		void main(void) {
 			gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
 		}`
-	rc := wcanvas.GetRenderingContext()
+	rc := wcanvas.GetWebGLRenderingContext()
 	context, c := rc.GetContext(), rc.GetConstants()
 
 	//// Geometry ////

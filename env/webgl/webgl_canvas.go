@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"syscall/js"
+
+	"github.com/go4orward/gigl"
 )
 
 type WebGLCanvas struct {
@@ -55,12 +57,16 @@ func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
 	return &self, nil
 }
 
-func (self *WebGLCanvas) GetRenderingContext() *WebGLRenderingContext {
+func (self *WebGLCanvas) GetWebGLRenderingContext() *WebGLRenderingContext {
 	return self.rc
 }
 
-func (self *WebGLCanvas) ShowInfo() {
-	fmt.Printf("WebGLCanvas : canvas '%s' (%d x %d)\n", self.id, self.wh[0], self.wh[1])
+func (self *WebGLCanvas) GetGLRenderingContext() gigl.GLRenderingContext {
+	return self.rc
+}
+
+func (self *WebGLCanvas) String() string {
+	return fmt.Sprintf("WebGLCanvas{id:'%s' size:%dx%d}\n", self.id, self.wh[0], self.wh[1])
 }
 
 // ----------------------------------------------------------------------------

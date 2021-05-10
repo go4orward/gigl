@@ -16,7 +16,7 @@ func main() {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
 	}
-	rc := wcanvas.GetRenderingContext()
+	rc := wcanvas.GetGLRenderingContext()
 	wglobe := globe.NewGlobe(rc, "#000000")              // Globe radius is assumed to be 1.0
 	wcamera := globe.NewWorldCamera(rc.GetWH(), 15, 1.0) // camera FOV default is 15° (in degree)
 	wcamera.SetPoseByLonLat(0, 0, 10)                    // longitude 0°, latitude 0°, radius(distance) 10.0

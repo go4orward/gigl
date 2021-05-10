@@ -471,20 +471,20 @@ func (self *Geometry) BuildWebGLBuffers(rc gigl.GLRenderingContext, for_points b
 	// THIS FUCNTION IS MEANT TO BE CALLED BY RENDERER. NO NEED TO BE EXPORTED
 	c := rc.GetConstants() // *gigl.Constants
 	if for_points {
-		self.wbuffer_vpoints = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)
+		self.wbuffer_vpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)
 	} else {
 		self.wbuffer_vpoints = nil
 	}
 	if for_lines {
-		self.wbuffer_lines = rc.CreateWebGLBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_lines)
+		self.wbuffer_lines = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_lines)
 	} else {
 		self.wbuffer_lines = nil
 	}
 	if for_faces && self.data_buffer_faces != nil {
 		if self.data_buffer_fpoints != nil {
-			self.wbuffer_fpoints = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.data_buffer_fpoints)
+			self.wbuffer_fpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_fpoints)
 		}
-		self.wbuffer_faces = rc.CreateWebGLBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_faces)
+		self.wbuffer_faces = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_faces)
 	} else {
 		self.wbuffer_faces = nil
 	}

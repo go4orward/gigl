@@ -97,34 +97,18 @@ func (self *WebGLRenderingContext) GetConstants() *gigl.GLConstants {
 // WebGL Data Buffer
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) CreateWebGLBuffer(target interface{}, data_slice interface{}) interface{} {
-	// 'bind_target' : c.ARRAY_BUFFER or c.ELEMENT_ARRAY_BUFFER
-	if data_slice != nil {
-		c := self.GetConstants()
-		buffer := self.context.Call("createBuffer", c.ARRAY_BUFFER.(js.Value)) // TODO: no argument needed
-		self.context.Call("bindBuffer", target.(js.Value), buffer)
-		var js_typed_array = self.ConvertGoSliceToJsTypedArray(data_slice)
-		self.context.Call("bufferData", target.(js.Value), js_typed_array, c.STATIC_DRAW.(js.Value))
-		self.context.Call("bindBuffer", target.(js.Value), nil)
-		return buffer
-	} else {
+func (self *WebGLRenderingContext) CreateDataBuffer(target interface{}, data_slice interface{}) interface{} {
+	// 'target' : c.ARRAY_BUFFER or c.ELEMENT_ARRAY_BUFFER
+	if data_slice == nil {
 		return nil
 	}
-}
-
-func (self *WebGLRenderingContext) GetWebGLBufferInfo(wbuffer interface{}) string {
-	if wbuffer == nil {
-		return "NULL"
-	} else {
-		b := wbuffer.(js.Value)
-		if b.IsNull() {
-			return "NULL"
-		} else if b.IsUndefined() {
-			return "UDEF"
-		} else {
-			return fmt.Sprintf("%4d", b.Length())
-		}
-	}
+	c := self.GetConstants()
+	buffer := self.context.Call("createBuffer", c.ARRAY_BUFFER.(js.Value)) // TODO: no argument needed
+	self.context.Call("bindBuffer", target.(js.Value), buffer)
+	var js_typed_array = self.ConvertGoSliceToJsTypedArray(data_slice)
+	self.context.Call("bufferData", target.(js.Value), js_typed_array, c.STATIC_DRAW.(js.Value))
+	self.context.Call("bindBuffer", target.(js.Value), nil)
+	return buffer
 }
 
 func (self *WebGLRenderingContext) GLBindBuffer(target interface{}, buffer interface{}) {

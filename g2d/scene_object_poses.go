@@ -10,7 +10,7 @@ type SceneObjectPoses struct {
 	Size       int         // number of values for a single pose
 	Count      int         // number of poses
 	DataBuffer []float32   //
-	wbuffer    interface{} //
+	rcbuffer   interface{} // DataBuffer for the RenderingContext
 }
 
 func NewSceneObjectPoses(size int, count int, data []float32) *SceneObjectPoses {
@@ -21,7 +21,7 @@ func NewSceneObjectPoses(size int, count int, data []float32) *SceneObjectPoses 
 			poses.DataBuffer[i] = data[i]
 		}
 	}
-	poses.wbuffer = nil
+	poses.rcbuffer = nil
 	return &poses
 }
 
@@ -45,23 +45,23 @@ func (self *SceneObjectPoses) SetPose(index int, offset int, values ...float32) 
 }
 
 // ----------------------------------------------------------------------------
-// Build WebGL Buffers
+// Build Buffers of RenderingContext
 // ----------------------------------------------------------------------------
 
-func (self *SceneObjectPoses) IsWebGLBufferReady() bool {
-	return self.wbuffer != nil
+func (self *SceneObjectPoses) IsRcBufferReady() bool {
+	return self.rcbuffer != nil
 }
 
-func (self *SceneObjectPoses) BuildWebGLBuffer(rc gigl.GLRenderingContext) {
+func (self *SceneObjectPoses) BuildRcBuffer(rc gigl.GLRenderingContext) {
 	// THIS FUNCTION IS MEANT TO BE CALLED BY RENDERER.
 	c := rc.GetConstants()
 	if self.DataBuffer != nil {
-		self.wbuffer = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.DataBuffer)
+		self.rcbuffer = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.DataBuffer)
 	} else {
-		self.wbuffer = nil
+		self.rcbuffer = nil
 	}
 }
 
-func (self *SceneObjectPoses) GetWebGLBuffer() (interface{}, int, [4]int) {
-	return self.wbuffer, len(self.DataBuffer), [4]int{0, 0, 0, 0}
+func (self *SceneObjectPoses) GetRcBuffer() (interface{}, int, [4]int) {
+	return self.rcbuffer, len(self.DataBuffer), [4]int{0, 0, 0, 0}
 }

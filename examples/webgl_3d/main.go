@@ -17,7 +17,7 @@ func main() {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
 	}
-	rc := wcanvas.GetRenderingContext()
+	rc := wcanvas.GetGLRenderingContext()
 	scene := g3d.NewScene("#ffffff") // Scene with WHITE background
 	if false {
 		// scene.Add(g3d.NewSceneObject_CylinderWireframe(rc)) // a pre-defined example of SceneObject

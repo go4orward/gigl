@@ -85,8 +85,8 @@ func (self *Renderer) RenderSceneObject(sobj *SceneObject, pvm *common.Matrix3) 
 	if sobj.Geometry.IsWebGLBufferReady() == false {
 		sobj.Geometry.BuildWebGLBuffers(rc, true, true, true)
 	}
-	if sobj.poses != nil && sobj.poses.IsWebGLBufferReady() == false {
-		sobj.poses.BuildWebGLBuffer(rc)
+	if sobj.poses != nil && sobj.poses.IsRcBufferReady() == false {
+		sobj.poses.BuildRcBuffer(rc)
 		if !rc.IsExtensionReady("ANGLE") {
 			rc.SetupExtension("ANGLE")
 		}
@@ -294,8 +294,8 @@ func (self *Renderer) bind_attribute(aname string, amap map[string]interface{},
 			size := get_count_from_type(dtype)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
-			wbuffer, _, _ := poses.GetWebGLBuffer()
-			rc.GLBindBuffer(c.ARRAY_BUFFER, wbuffer)
+			rcbuffer, _, _ := poses.GetRcBuffer()
+			rc.GLBindBuffer(c.ARRAY_BUFFER, rcbuffer)
 			rc.GLVertexAttribPointer(location, size, c.FLOAT, false, stride*4, offset*4)
 			rc.GLEnableVertexAttribArray(location)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);

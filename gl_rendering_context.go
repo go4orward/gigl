@@ -7,8 +7,7 @@ type GLRenderingContext interface {
 	CreateShader(vertex_shader string, fragment_shader string) (GLShader, error)
 
 	// Data Buffer
-	CreateWebGLBuffer(binding_target interface{}, data_slice interface{}) interface{}
-	GetWebGLBufferInfo(wbuffer interface{}) string
+	CreateDataBuffer(binding_target interface{}, data_slice interface{}) interface{}
 	GLBindBuffer(binding_target interface{}, buffer interface{})
 
 	// Texture

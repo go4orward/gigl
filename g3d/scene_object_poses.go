@@ -45,23 +45,23 @@ func (self *SceneObjectPoses) SetPose(index int, offset int, values ...float32) 
 }
 
 // ----------------------------------------------------------------------------
-// Build WebGL Buffers
+// Build Buffers of RenderingContext
 // ----------------------------------------------------------------------------
 
-func (self *SceneObjectPoses) IsWebGLBufferReady() bool {
+func (self *SceneObjectPoses) IsRcBufferReady() bool {
 	return self.wbuffer != nil
 }
 
-func (self *SceneObjectPoses) BuildWebGLBuffer(rc gigl.GLRenderingContext) {
+func (self *SceneObjectPoses) BuildRcBuffer(rc gigl.GLRenderingContext) {
 	// THIS FUNCTION IS MEANT TO BE CALLED BY RENDERER.
 	c := rc.GetConstants()
 	if self.DataBuffer != nil {
-		self.wbuffer = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.DataBuffer)
+		self.wbuffer = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.DataBuffer)
 	} else {
 		self.wbuffer = nil
 	}
 }
 
-func (self *SceneObjectPoses) GetWebGLBuffer() (interface{}, int, [4]int) {
+func (self *SceneObjectPoses) GetRcBuffer() (interface{}, int, [4]int) {
 	return self.wbuffer, len(self.DataBuffer), [4]int{0, 0, 0, 0}
 }

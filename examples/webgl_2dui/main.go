@@ -18,7 +18,7 @@ func main() {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
 	}
-	rc := wcanvas.GetRenderingContext()
+	rc := wcanvas.GetGLRenderingContext()
 	scene := g2d.NewScene("#ffffff") // Scene with WHITE background
 	if true {
 		scene.Add(g2d.NewSceneObject_RectangleInstancesExample(rc)) // multiple instances of rectangles

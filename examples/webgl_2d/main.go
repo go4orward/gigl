@@ -17,7 +17,7 @@ func main() {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
 	}
-	rc := wcanvas.GetRenderingContext()
+	rc := wcanvas.GetGLRenderingContext()
 	geometry := g2d.NewGeometry_Triangle(0.5)   // create geometry (a triangle with radius 0.5)
 	geometry.BuildDataBuffers(true, true, true) // build data buffers for vertices, edges and faces
 	material, _ := rc.CreateMaterial("#bbbbff") // create material (with light-blue color)

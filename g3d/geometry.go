@@ -31,10 +31,10 @@ type Geometry struct {
 	fpoint_info       [4]int   // data size of a point (for triangles) : [ stride, xyz_offset, uv_offset, normal_offset ]
 	vpoint_info       [4]int   // data size of a point (for points & lines)
 
-	wbuffer_vpoints interface{} // WebGL data buffer for data_buffer_vpoints (points for vertices)
-	wbuffer_fpoints interface{} // WebGL data buffer for data_buffer_fpoints (points for PER_FACE vertices)
-	wbuffer_lines   interface{} // WebGL data buffer for data_buffer_lines (indices for lines)
-	wbuffer_faces   interface{} // WebGL data buffer for data_buffer_faces (indices for triangles)
+	rcbuffer_vpoints interface{} // RenderingContext data buffer for data_buffer_vpoints (points for vertices)
+	rcbuffer_fpoints interface{} // RenderingContext data buffer for data_buffer_fpoints (points for PER_FACE vertices)
+	rcbuffer_lines   interface{} // RenderingContext data buffer for data_buffer_lines (indices for lines)
+	rcbuffer_faces   interface{} // RenderingContext data buffer for data_buffer_faces (indices for triangles)
 }
 
 func NewGeometry() *Geometry {
@@ -62,10 +62,10 @@ func (self *Geometry) Clear(geom bool, data_buf bool, webgl_buf bool) *Geometry 
 		self.vpoint_info = [4]int{0, 0, 0, 0}
 	}
 	if webgl_buf || data_buf || geom {
-		self.wbuffer_vpoints = nil
-		self.wbuffer_fpoints = nil
-		self.wbuffer_lines = nil
-		self.wbuffer_faces = nil
+		self.rcbuffer_vpoints = nil
+		self.rcbuffer_fpoints = nil
+		self.rcbuffer_lines = nil
+		self.rcbuffer_faces = nil
 	}
 	return self
 }
@@ -101,10 +101,10 @@ func (self *Geometry) ShowInfo() {
 			return "O"
 		}
 	}
-	fmt.Printf("    data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wb(self.wbuffer_vpoints), self.vpoint_info)
-	fmt.Printf("    data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wb(self.wbuffer_fpoints), self.fpoint_info)
-	fmt.Printf("    data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wb(self.wbuffer_lines))
-	fmt.Printf("    data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wb(self.wbuffer_faces))
+	fmt.Printf("    data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wb(self.rcbuffer_vpoints), self.vpoint_info)
+	fmt.Printf("    data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wb(self.rcbuffer_fpoints), self.fpoint_info)
+	fmt.Printf("    data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wb(self.rcbuffer_lines))
+	fmt.Printf("    data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wb(self.rcbuffer_faces))
 	// fmt.Printf("    data_buffer_vpoints : %v\n", self.data_buffer_vpoints)
 	// fmt.Printf("    data_buffer_fpoints : %v\n", self.data_buffer_fpoints)
 }
@@ -634,28 +634,28 @@ func (self *Geometry) BuildDataBuffersForWireframe() {
 // ----------------------------------------------------------------------------
 
 func (self *Geometry) IsWebGLBufferReady() bool {
-	return self.wbuffer_vpoints != nil
+	return self.rcbuffer_vpoints != nil
 }
 
 func (self *Geometry) BuildWebGLBuffers(rc gigl.GLRenderingContext, for_points bool, for_lines bool, for_faces bool) {
 	c := rc.GetConstants()
 	if for_points {
-		self.wbuffer_vpoints = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)
+		self.rcbuffer_vpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)
 	} else {
-		self.wbuffer_vpoints = nil
+		self.rcbuffer_vpoints = nil
 	}
 	if for_lines {
-		self.wbuffer_lines = rc.CreateWebGLBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_lines)
+		self.rcbuffer_lines = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_lines)
 	} else {
-		self.wbuffer_lines = nil
+		self.rcbuffer_lines = nil
 	}
 	if for_faces && self.data_buffer_faces != nil {
 		if self.data_buffer_fpoints != nil {
-			self.wbuffer_fpoints = rc.CreateWebGLBuffer(c.ARRAY_BUFFER, self.data_buffer_fpoints)
+			self.rcbuffer_fpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_fpoints)
 		}
-		self.wbuffer_faces = rc.CreateWebGLBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_faces)
+		self.rcbuffer_faces = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_faces)
 	} else {
-		self.wbuffer_faces = nil
+		self.rcbuffer_faces = nil
 	}
 }
 
@@ -663,17 +663,17 @@ func (self *Geometry) GetWebGLBuffer(draw_mode int) (interface{}, int, [4]int) {
 	switch draw_mode {
 	case 1: // "POINTS", "VERTICES":
 		if self.data_buffer_fpoints == nil {
-			return self.wbuffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
+			return self.rcbuffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
 		} else {
-			return self.wbuffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
+			return self.rcbuffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
 		}
 	case 2: // "LINES", "EDGES":
-		return self.wbuffer_lines, len(self.data_buffer_lines), self.vpoint_info
+		return self.rcbuffer_lines, len(self.data_buffer_lines), self.vpoint_info
 	case 3: // "TRIANGLES", "FACES":
 		if self.data_buffer_fpoints == nil {
-			return self.wbuffer_faces, len(self.data_buffer_faces), self.vpoint_info
+			return self.rcbuffer_faces, len(self.data_buffer_faces), self.vpoint_info
 		} else {
-			return self.wbuffer_faces, len(self.data_buffer_faces), self.fpoint_info
+			return self.rcbuffer_faces, len(self.data_buffer_faces), self.fpoint_info
 		}
 	default:
 		fmt.Printf("Invalid mode '%d' for GetWebGLBuffer()\n", draw_mode)
