@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"syscall/js"
 	"unsafe"
 
@@ -11,11 +12,11 @@ import (
 )
 
 type WebGLRenderingContext struct {
-	context   js.Value          // WebGLRenderingContext
-	constants *gigl.GLConstants // WebGL constant values
-	ext_uint  js.Value          // extension for "OES_element_index_uint"
-	ext_angle js.Value          // extension for "ANGLE_instanced_arrays"
-	wh        [2]int            // canvas width & height
+	context   js.Value         // WebGLRenderingContext
+	constants gigl.GLConstants // WebGL constant values
+	ext_uint  js.Value         // extension for "OES_element_index_uint"
+	ext_angle js.Value         // extension for "ANGLE_instanced_arrays"
+	wh        [2]int           // canvas width & height
 }
 
 func NewWebGLRenderingContext(canvas js.Value) (*WebGLRenderingContext, error) {
@@ -31,7 +32,40 @@ func NewWebGLRenderingContext(canvas js.Value) (*WebGLRenderingContext, error) {
 	self.SetupExtension("ANGLE")  // extension for geometry instancing
 	self.wh[0] = canvas.Get("clientWidth").Int()
 	self.wh[1] = canvas.Get("clientHeight").Int()
-	self.GetConstants()
+	// get WebGL constants
+	self.constants.ARRAY_BUFFER = self.context.Get("ARRAY_BUFFER")
+	self.constants.BLEND = self.context.Get("BLEND")
+	self.constants.BYTE = self.context.Get("BYTE")
+	self.constants.CLAMP_TO_EDGE = self.context.Get("CLAMP_TO_EDGE")
+	self.constants.COLOR_BUFFER_BIT = self.context.Get("COLOR_BUFFER_BIT")
+	self.constants.COMPILE_STATUS = self.context.Get("COMPILE_STATUS")
+	self.constants.DEPTH_BUFFER_BIT = self.context.Get("DEPTH_BUFFER_BIT")
+	self.constants.DEPTH_TEST = self.context.Get("DEPTH_TEST")
+	self.constants.ELEMENT_ARRAY_BUFFER = self.context.Get("ELEMENT_ARRAY_BUFFER")
+	self.constants.FLOAT = self.context.Get("FLOAT")
+	self.constants.FRAGMENT_SHADER = self.context.Get("FRAGMENT_SHADER")
+	self.constants.LEQUAL = self.context.Get("LEQUAL")
+	self.constants.LINEAR = self.context.Get("LINEAR")
+	self.constants.LINES = self.context.Get("LINES")
+	self.constants.LINK_STATUS = self.context.Get("LINK_STATUS")
+	self.constants.NEAREST = self.context.Get("NEAREST")
+	self.constants.ONE = self.context.Get("ONE")
+	self.constants.ONE_MINUS_SRC_ALPHA = self.context.Get("ONE_MINUS_SRC_ALPHA")
+	self.constants.POINTS = self.context.Get("POINTS")
+	self.constants.RGBA = self.context.Get("RGBA")
+	self.constants.SRC_ALPHA = self.context.Get("SRC_ALPHA")
+	self.constants.STATIC_DRAW = self.context.Get("STATIC_DRAW")
+	self.constants.TEXTURE_2D = self.context.Get("TEXTURE_2D")
+	self.constants.TEXTURE0 = self.context.Get("TEXTURE0")
+	self.constants.TEXTURE1 = self.context.Get("TEXTURE1")
+	self.constants.TEXTURE_MIN_FILTER = self.context.Get("TEXTURE_MIN_FILTER")
+	self.constants.TEXTURE_WRAP_S = self.context.Get("TEXTURE_WRAP_S")
+	self.constants.TEXTURE_WRAP_T = self.context.Get("TEXTURE_WRAP_T")
+	self.constants.TRIANGLES = self.context.Get("TRIANGLES")
+	self.constants.UNSIGNED_BYTE = self.context.Get("UNSIGNED_BYTE")
+	self.constants.UNSIGNED_INT = self.context.Get("UNSIGNED_INT")
+	self.constants.UNSIGNED_SHORT = self.context.Get("UNSIGNED_SHORT")
+	self.constants.VERTEX_SHADER = self.context.Get("VERTEX_SHADER")
 	return &self, nil
 }
 
@@ -43,54 +77,49 @@ func (self *WebGLRenderingContext) GetContext() js.Value {
 	return self.context
 }
 
+func (self *WebGLRenderingContext) GetConstants() *gigl.GLConstants {
+	return &self.constants
+}
+
+func (self *WebGLRenderingContext) GetEnvVariable(vname string, dtype string) interface{} {
+	// In WebGL environment, 'EnvVariable' means QueryParameters of the current URL path
+	href := js.Global().Get("window").Get("location").Get("href").String()
+	url := js.Global().Get("URL").New(href)
+	param := url.Get("searchParams").Call("get", vname)
+	switch dtype {
+	case "int":
+		if param.IsNull() {
+			return 0
+		} else {
+			n, _ := strconv.Atoi(param.String())
+			return n
+		}
+	case "bool":
+		if param.IsNull() {
+			return false
+		} else {
+			b, _ := strconv.ParseBool(param.String())
+			return b
+		}
+	default:
+		if param.IsNull() {
+			return ""
+		} else {
+			return param.String()
+		}
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Create Material & Shader
+// ----------------------------------------------------------------------------
+
 func (self *WebGLRenderingContext) CreateMaterial(source string, options ...interface{}) (gigl.GLMaterial, error) {
 	return NewWebGLMaterial(self, source, options...)
 }
 
 func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
 	return NewWebGLShader(self, vertex_shader, fragment_shader)
-}
-
-func (self *WebGLRenderingContext) GetConstants() *gigl.GLConstants {
-	if self.constants == nil {
-		// get WebGL constants
-		c := gigl.GLConstants{}
-		c.ARRAY_BUFFER = self.context.Get("ARRAY_BUFFER")
-		c.BLEND = self.context.Get("BLEND")
-		c.BYTE = self.context.Get("BYTE")
-		c.CLAMP_TO_EDGE = self.context.Get("CLAMP_TO_EDGE")
-		c.COLOR_BUFFER_BIT = self.context.Get("COLOR_BUFFER_BIT")
-		c.COMPILE_STATUS = self.context.Get("COMPILE_STATUS")
-		c.DEPTH_BUFFER_BIT = self.context.Get("DEPTH_BUFFER_BIT")
-		c.DEPTH_TEST = self.context.Get("DEPTH_TEST")
-		c.ELEMENT_ARRAY_BUFFER = self.context.Get("ELEMENT_ARRAY_BUFFER")
-		c.FLOAT = self.context.Get("FLOAT")
-		c.FRAGMENT_SHADER = self.context.Get("FRAGMENT_SHADER")
-		c.LEQUAL = self.context.Get("LEQUAL")
-		c.LINEAR = self.context.Get("LINEAR")
-		c.LINES = self.context.Get("LINES")
-		c.LINK_STATUS = self.context.Get("LINK_STATUS")
-		c.NEAREST = self.context.Get("NEAREST")
-		c.ONE = self.context.Get("ONE")
-		c.ONE_MINUS_SRC_ALPHA = self.context.Get("ONE_MINUS_SRC_ALPHA")
-		c.POINTS = self.context.Get("POINTS")
-		c.RGBA = self.context.Get("RGBA")
-		c.SRC_ALPHA = self.context.Get("SRC_ALPHA")
-		c.STATIC_DRAW = self.context.Get("STATIC_DRAW")
-		c.TEXTURE_2D = self.context.Get("TEXTURE_2D")
-		c.TEXTURE0 = self.context.Get("TEXTURE0")
-		c.TEXTURE1 = self.context.Get("TEXTURE1")
-		c.TEXTURE_MIN_FILTER = self.context.Get("TEXTURE_MIN_FILTER")
-		c.TEXTURE_WRAP_S = self.context.Get("TEXTURE_WRAP_S")
-		c.TEXTURE_WRAP_T = self.context.Get("TEXTURE_WRAP_T")
-		c.TRIANGLES = self.context.Get("TRIANGLES")
-		c.UNSIGNED_BYTE = self.context.Get("UNSIGNED_BYTE")
-		c.UNSIGNED_INT = self.context.Get("UNSIGNED_INT")
-		c.UNSIGNED_SHORT = self.context.Get("UNSIGNED_SHORT")
-		c.VERTEX_SHADER = self.context.Get("VERTEX_SHADER")
-		self.constants = &c
-	}
-	return self.constants
 }
 
 // ----------------------------------------------------------------------------

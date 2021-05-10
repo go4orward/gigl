@@ -3,6 +3,9 @@ package gigl
 type GLRenderingContext interface {
 	GetWH() [2]int
 	GetConstants() *GLConstants
+	GetEnvVariable(vname string, dtype string) interface{}
+
+	// Material & Shader
 	CreateMaterial(source string, options ...interface{}) (GLMaterial, error)
 	CreateShader(vertex_shader string, fragment_shader string) (GLShader, error)
 
