@@ -38,7 +38,7 @@ $ make opengl_3d       # source : 'examples/opengl_3d/main.go'
 ```
 ![webgl_3d_example result](examples/captured/xscreen_webgl3d.png)
 
-Globe example: &emsp; _(with a specialized sphere for the Globe)_
+Globe example: &emsp; _(with a specialized sphere and glow effect for the Globe)_
 ```bash
 $ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 ```
