@@ -1,4 +1,4 @@
-package globe
+package world
 
 import "math"
 

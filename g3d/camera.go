@@ -8,40 +8,48 @@ import (
 	"github.com/go4orward/gigl/g3d/c3d"
 )
 
-type CameraProjection interface {
-	IsPerspective() bool
-	IsOrthographic() bool
-	GetParameters() (wh [2]int, fov float32, zoom float32, nearfar [2]float32)
-	GetMatrix() *common.Matrix4
-	SetAspectRatio(width int, height int)
-	SetZoom(zoom float32)
+// ----------------------------------------------------------------------------
+// Camera Initialization Parameters
+// ----------------------------------------------------------------------------
 
-	MultiplyVector3([3]float32) [3]float32 // only for test
+type CamInternalParams struct {
+	WH      [2]int     // aspect ratio					default: [100 100]
+	Fov     float32    // field of view (in degree) 	default:       15°  (2.0 CLIP_WIDTH for orthogonal)
+	Zoom    float32    // zoom level					default:      1.0
+	NearFar [2]float32 // distances to near/far plane	default:   [1 100]
+	// 'fov' (field of view') : 15 degree (default) will cover width 2 at distance 10 in full screen)
 }
+
+type CamExternalPose struct {
+	From [3]float32 // camera position in WORLD space	default: [0  0 10]
+	At   [3]float32 // look-at target  in WORLD space	default: [0  0  0]
+	Up   [3]float32 // camera up direction				default: [0  1  0]
+}
+
+// ----------------------------------------------------------------------------
+// Camera
+// ----------------------------------------------------------------------------
 
 type Camera struct {
-	// camera internal parameters
-	projection CameraProjection // projection matrix (transformation from CAMERA to CLIP space)
-	// camera pose
-	viewmatrix common.Matrix4 // view matrix Mcw (transformation from WORLD to CAMERA space)
-	center     [3]float32     // camera position in world space
-	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
+	perspective bool              // perspective or orthogonal
+	ip          CamInternalParams //
+	projmatrix  common.Matrix4    // projection matrix
+	viewmatrix  common.Matrix4    // view matrix Mcw (transformation from WORLD to CAMERA space)
+	center      [3]float32        // camera position in world space
 }
 
-func NewPerspectiveCamera(wh [2]int, fov_in_degree float32, zoom float32) *Camera {
-	// 'fov' 15 degree (default) will cover width 2 at distance 10 in full screen)
-	camera := Camera{}
-	camera.projection = NewPerspectiveProjection(wh, fov_in_degree, zoom, [2]float32{1.0, 100.0})
-	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
-	return &camera
+func NewCamera(perspective bool, ip *CamInternalParams, ep *CamExternalPose) *Camera {
+	self := Camera{}
+	self.perspective = perspective
+	self.ip = *ip
+	self.UpdateProjectionMatrix()
+	self.SetPose(ep.From, ep.At, ep.Up)
+	self.CheckInternalParameters() // check internal parameters, and fix them if necessary
+	return &self
 }
 
-func NewOrthographicCamera(wh [2]int, fov_in_clipwidth float32, zoom float32) *Camera {
-	// 'fov' 2.6 (default) will cover width 2 at any distance in full screen)
-	camera := Camera{}
-	camera.projection = NewOrthographicProjection(wh, fov_in_clipwidth, zoom, [2]float32{1.0, 100.0})
-	camera.SetPose([3]float32{0, 0, 10}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
-	return &camera
+func (self *Camera) IsPerspective() bool {
+	return self.perspective
 }
 
 func (self *Camera) GetCenter() [3]float32 {
@@ -49,7 +57,7 @@ func (self *Camera) GetCenter() [3]float32 {
 }
 
 func (self *Camera) GetProjMatrix() *common.Matrix4 {
-	return self.projection.GetMatrix()
+	return &self.projmatrix
 }
 
 func (self *Camera) GetViewMatrix() *common.Matrix4 {
@@ -57,21 +65,40 @@ func (self *Camera) GetViewMatrix() *common.Matrix4 {
 }
 
 func (self *Camera) ShowInfo() {
-	if self.projection.IsPerspective() {
-		wh, fov, zoom, nearfar := self.projection.GetParameters()
+	wh, fov, zoom, nearfar := self.ip.WH, self.ip.Fov, self.ip.Zoom, self.ip.NearFar
+	if self.perspective {
 		fmt.Printf("Perspective Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
 		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.0f°  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
 	} else {
-		wh, fov, zoom, nearfar := self.projection.GetParameters()
 		fmt.Printf("Orthographic Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
 		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
 	}
-	p := self.projection.GetMatrix().GetElements() // Note that Matrix4 is column-major (just like WebGL)
+	p := self.projmatrix.GetElements() // Note that Matrix4 is column-major (just like WebGL)
 	v := self.viewmatrix.GetElements()
 	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[0], p[4], p[8], p[12], v[0], v[4], v[8], v[12])
 	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[1], p[5], p[9], p[13], v[1], v[5], v[9], v[13])
 	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[2], p[6], p[10], p[14], v[2], v[6], v[10], v[14])
 	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[3], p[7], p[11], p[15], v[3], v[7], v[11], v[15])
+}
+
+func (self *Camera) CheckInternalParameters() *Camera {
+	param_fixed := false
+	if true { // check if near/far values are appropriate, w.r.t. camera's from/at position
+		camdist := c3d.Length(self.center)
+		if camdist < self.ip.NearFar[0] {
+			self.ip.NearFar[0] = camdist / 2.0
+			param_fixed = true
+		}
+		if camdist > self.ip.NearFar[1] {
+			self.ip.NearFar[1] = camdist * 2.0
+			param_fixed = true
+		}
+	}
+	if param_fixed {
+		fmt.Printf("Camera parameters fixed to wh:%v fov:%v zoom:%v nearfar:%v\n", self.ip.WH, self.ip.Fov, self.ip.Zoom, self.ip.NearFar)
+		self.UpdateProjectionMatrix()
+	}
+	return self
 }
 
 // ----------------------------------------------------------------------------
@@ -80,15 +107,56 @@ func (self *Camera) ShowInfo() {
 
 func (self *Camera) SetAspectRatio(width int, height int) *Camera {
 	// This function can be called to handle 'window.resize' event
-	self.projection.SetAspectRatio(width, height)
+	self.ip.WH = [2]int{width, height}
+	self.UpdateProjectionMatrix()
 	return self
 }
 
 func (self *Camera) SetZoom(zoom float32) *Camera {
 	// This function can be called to handle 'wheel' event [ 0.01 ~ 1.0(default) ~ 100.0 ]
-	zoom = float32(math.Max(0.001, math.Min(float64(zoom), 1000.0)))
-	self.projection.SetZoom(zoom)
+	self.ip.Zoom = float32(math.Max(0.001, math.Min(float64(zoom), 1000.0)))
+	self.UpdateProjectionMatrix()
 	return self
+}
+
+func (self *Camera) UpdateProjectionMatrix() {
+	aspect_ratio := float32(self.ip.WH[0]) / float32(self.ip.WH[1])
+	var clip_width, clip_height float32
+	if aspect_ratio > 1.0 {
+		clip_width, clip_height = 2.0*aspect_ratio, float32(2.0) // CLIP space width & height (2.0)
+	} else {
+		clip_width, clip_height = float32(2.0), 2.0/aspect_ratio // CLIP space width (2.0) & height
+	}
+	near, far := self.ip.NearFar[0], self.ip.NearFar[1]
+	if self.perspective {
+		// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
+		// this.projectionMatrix.makePerspective( left, left + width, top, top - height, nearfar[0], nearfar[1] );
+		x := 2 * self.ip.Zoom * near / clip_width
+		y := 2 * self.ip.Zoom * near / clip_height
+		c := -(far + near) / (far - near)
+		d := -2 * far * near / (far - near)
+		// factor for 'field of view' (fov 15 degree will cover width 2 at distance 10 in full screen)
+		// ff := float32(math.Tan(float64(self.fov/2)*InRadian)) * 70
+		ff := 1.0 / float32(math.Tan(float64(self.ip.Fov/2)*InRadian))
+		self.projmatrix.Set(
+			ff*x, 0.0, 0.0, 0.0,
+			0.0, ff*y, 0.0, 0.0,
+			0.0, 0.0, c, d,
+			0.0, 0.0, -1, 0.0,
+		)
+	} else {
+		// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
+		x := 2 * self.ip.Zoom / clip_width
+		y := 2 * self.ip.Zoom / clip_height
+		p := 1.0 / (far - near)
+		z := (far + near) * p
+		ff := 2.0 / self.ip.Fov // fov 2.0 will cover width 2 at any distance in full screen
+		self.projmatrix.Set(
+			ff*x, 0.0, 0.0, 0.0,
+			0.0, ff*y, 0.0, 0.0,
+			0.0, 0.0, -2*p, -z,
+			0.0, 0.0, 0.0, 1.0)
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -196,7 +264,7 @@ func (self *Camera) TestDataBuffer(dbuffer []float32, stride int) {
 		v := dbuffer[i : i+3]
 		v_world := [3]float32{v[0], v[1], v[2]}
 		v_camera := self.viewmatrix.MultiplyVector3(v_world)
-		v_clip := self.projection.MultiplyVector3(v_camera)
+		v_clip := self.projmatrix.MultiplyVector3(v_camera)
 		vertices = append(vertices, v_world, v_camera, v_clip)
 	}
 	for j := 0; j < 3; j++ {

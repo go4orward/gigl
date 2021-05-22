@@ -2,6 +2,7 @@ package g2d
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
@@ -9,17 +10,22 @@ import (
 )
 
 type SceneObject struct {
-	Geometry    *Geometry         // geometry interface
-	Material    gigl.GLMaterial   // material
-	VShader     gigl.GLShader     // vert shader and its bindings
-	EShader     gigl.GLShader     // edge shader and its bindings
-	FShader     gigl.GLShader     // face shader and its bindings
-	modelmatrix common.Matrix3    // model transformation matrix of this SceneObject
-	UseDepth    bool              // depth test flag (default is true)
-	UseBlend    bool              // blending flag with alpha (default is false)
-	poses       *SceneObjectPoses // OPTIONAL, poses for multiple instances of this (geometry+material) object
-	children    []*SceneObject    // OPTIONAL, children of this SceneObject (to be rendered recursively)
-	bbox        [2][2]float32     // bounding box
+	Geometry    *Geometry       // geometry interface
+	Material    gigl.GLMaterial // material
+	VShader     gigl.GLShader   // vert shader and its bindings
+	EShader     gigl.GLShader   // edge shader and its bindings
+	FShader     gigl.GLShader   // face shader and its bindings
+	modelmatrix common.Matrix3  // model transformation matrix of this SceneObject
+	UseDepth    bool            // depth test flag (default is true)
+	UseBlend    bool            // blending flag with alpha (default is false)
+	children    []*SceneObject  // OPTIONAL, children of this SceneObject (to be rendered recursively)
+	bbox        [2][2]float32   // bounding box
+	// multiple instance poses
+	instance_count  int       // number of instances
+	instance_stride int       // number of values of a single pose
+	instance_buffer []float32 //
+	// VAO (set of RenderingContext buffers)
+	vao *gigl.VAO //
 }
 
 func NewSceneObject(geometry *Geometry, material gigl.GLMaterial,
@@ -37,7 +43,6 @@ func NewSceneObject(geometry *Geometry, material gigl.GLMaterial,
 	sobj.modelmatrix.SetIdentity()
 	sobj.UseDepth = false // new drawings will overwrite old ones by default
 	sobj.UseBlend = false // alpha blending is turned off by default
-	sobj.poses = nil      // OPTIONAL, only if multiple instances of the geometry are rendered
 	sobj.children = nil   // OPTIONAL, only if current SceneObject has any child SceneObjects
 	sobj.bbox = c2d.BBoxInit()
 	return &sobj
@@ -46,9 +51,8 @@ func NewSceneObject(geometry *Geometry, material gigl.GLMaterial,
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
 	self.Geometry.ShowInfo()
-	if self.poses != nil {
-		fmt.Printf("  ")
-		self.poses.ShowInfo()
+	if self.instance_buffer != nil {
+		fmt.Printf("  Instance Poses : nposes=%d stride=%d\n", self.instance_count, self.instance_stride)
 	}
 	if self.Material != nil {
 		fmt.Printf("  ")
@@ -86,22 +90,46 @@ func (self *SceneObject) AddChild(child *SceneObject) *SceneObject {
 // Multiple Instance Poses
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) SetPoses(poses *SceneObjectPoses) *SceneObject {
+func (self *SceneObject) ClearInstanceBuffer() {
+	self.instance_buffer = nil
+	self.instance_count = 0
+	self.instance_stride = 0
+}
+
+func (self *SceneObject) SetInstanceBuffer(instance_count int, instance_stride int, data []float32) *SceneObject {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses = poses
+	self.instance_buffer = make([]float32, instance_count*instance_stride)
+	self.instance_count = instance_count
+	self.instance_stride = instance_stride
+	if data != nil {
+		for i := 0; i < len(self.instance_buffer) && i < len(data); i++ {
+			self.instance_buffer[i] = data[i]
+		}
+	}
 	return self
 }
 
-func (self *SceneObject) SetupPoses(size int, count int, data []float32) *SceneObject {
+func (self *SceneObject) SetInstancePoseValues(instance_index int, offset int, values ...float32) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses = NewSceneObjectPoses(size, count, data)
-	return self
+	if (offset + len(values)) > self.instance_stride {
+		fmt.Printf("WARNING: SetInstancePoseValues() failed : invalid offset (%d) and value count (%d) for the stride (%d)\n", offset, len(values), self.instance_stride)
+		return
+	}
+	pos := instance_index * self.instance_stride
+	for i := 0; i < len(values); i++ {
+		self.instance_buffer[pos+offset+i] = values[i]
+	}
 }
 
-func (self *SceneObject) SetPoseValues(index int, offset int, values ...float32) *SceneObject {
+func (self *SceneObject) SetInstanceColorValues(instance_index int, offset int, v0 uint8, v1 uint8, v2 uint8, v3 uint8) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses.SetPose(index, offset, values...)
-	return self
+	if (offset + 1) > self.instance_stride {
+		fmt.Printf("WARNING: SetInstanceColorValues() failed : invalid offset (%d) for the stride (%d)\n", offset, self.instance_stride)
+		return
+	}
+	pos := instance_index * self.instance_stride
+	b0, b1, b2, b3 := uint32(v0), uint32(v1), uint32(v2), uint32(v3)
+	self.instance_buffer[pos+offset] = math.Float32frombits(b0 + b1<<8 + b2<<16 + b3<<24) // LittleEndian (lower byte comes first)
 }
 
 // ----------------------------------------------------------------------------
@@ -149,21 +177,22 @@ func (self *SceneObject) GetBoundingBox(m *common.Matrix3, renew bool) [2][2]flo
 			mm = self.modelmatrix.Copy() // new matrix
 		}
 		// add all the vertices of the geometry
-		if self.poses == nil {
-			for _, v := range self.Geometry.verts {
-				xy := mm.MultiplyVector2(v)
-				c2d.BBoxAddPoint(&bbox, xy)
-			}
-		} else {
-			for i := 0; i < self.poses.Count; i++ {
-				idx := i * self.poses.Size
-				txy := self.poses.DataBuffer[idx : idx+2]
-				for _, v := range self.Geometry.verts {
-					xy := [2]float32{v[0] + txy[0], v[1] + txy[1]}
-					xy = mm.MultiplyVector2(xy)
-					c2d.BBoxAddPoint(&bbox, xy)
+		for _, v := range self.Geometry.verts {
+			xy := mm.MultiplyVector2(v)
+			c2d.BBoxAddPoint(&bbox, xy)
+		}
+		if self.instance_count > 0 {
+			bbox_posed := c2d.BBoxInit()
+			for i := 0; i < self.instance_count; i++ {
+				idx := i * self.instance_stride
+				txy := self.instance_buffer[idx : idx+2]
+				for k := 0; k < 2; k++ {
+					bboxp := [2]float32{bbox[k][0] + txy[0], bbox[k][1] + txy[1]}
+					bboxp = mm.MultiplyVector2(bboxp)
+					c2d.BBoxAddPoint(&bbox_posed, bboxp)
 				}
 			}
+			bbox = bbox_posed
 		}
 		for _, sobj := range self.children {
 			bbox = c2d.BBoxMerge(bbox, sobj.GetBoundingBox(mm, renew))

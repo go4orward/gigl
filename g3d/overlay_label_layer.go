@@ -138,7 +138,7 @@ func (self *OverlayLabelLayer) CreateLabel(label_text string, xyz [3]float32, co
 	return label
 }
 
-func (self *OverlayLabelLayer) AddTextLabel(label_text string, xyz [3]float32, color string, offref string) *OverlayLabelLayer {
+func (self *OverlayLabelLayer) AddTextLabel(label_text string, xyz [3]float32, color string, offref string) *OverlayLabel {
 	// Convenience function to quickly add a Label,
 	//   which simplifies all the following steps:
 	//   label := layer.CreateLabel();  label.SetPose();  layer.AddLabel(label)
@@ -146,7 +146,7 @@ func (self *OverlayLabelLayer) AddTextLabel(label_text string, xyz [3]float32, c
 	label := &OverlayLabel{text: label_text, xyz: xyz, chwh: chwh, color: color}
 	label.SetPose(0, offref, [2]float32{0, 0})
 	self.AddLabel(label)
-	return self
+	return label
 }
 
 func (self *OverlayLabelLayer) AddLabelsForTest() *OverlayLabelLayer {
@@ -217,11 +217,10 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 	scnobj := NewSceneObject(self.alphabet_geometry, self.alphabet_texture, shader, nil, nil) // shader for drawing POINTS (for each character)
 	// calculate the pose of each character (rune)
 	label_runes := []rune(label.text)
-	label_character_poses := NewSceneObjectPoses(2, len(label_runes), nil)
+	scnobj.SetInstanceBuffer(len(label_runes), 2, nil)
 	for i := 0; i < len(label_runes); i++ { // save character index & code for each rune
-		label_character_poses.SetPose(i, 0, float32(i), float32(self.alphabet_texture.GetAlaphabetCharacterIndex(label_runes[i])))
+		scnobj.SetInstancePoseValues(i, 0, float32(i), float32(self.alphabet_texture.GetAlaphabetCharacterIndex(label_runes[i])))
 	}
-	scnobj.SetPoses(label_character_poses)
 	scnobj.UseDepth = true
 	scnobj.UseBlend = true
 	return scnobj

@@ -1,28 +1,31 @@
 package gigl
 
+// ----------------------------------------------------------------------------
+// GLRenderingContext
+// ----------------------------------------------------------------------------
+
 type GLRenderingContext interface {
 	GetWH() [2]int
 	GetConstants() *GLConstants
 	GetEnvVariable(vname string, dtype string) interface{}
 
-	// Material & Shader
+	// Material
 	CreateMaterial(source string, options ...interface{}) (GLMaterial, error)
+	// Shader
 	CreateShader(vertex_shader string, fragment_shader string) (GLShader, error)
+	// DataBuffer
+	CreateDataBufferVAO() *VAO
+	CreateVtxDataBuffer(data_slice []float32) interface{}
+	CreateIdxDataBuffer(data_slice []uint32) interface{}
 
-	// Data Buffer
-	CreateDataBuffer(binding_target interface{}, data_slice interface{}) interface{}
-	GLBindBuffer(binding_target interface{}, buffer interface{})
+	// Binding DataBuffer
+	GLBindBuffer(binding_target uint32, buffer interface{})
 
-	// Texture
-	GLCreateTexture() interface{}
+	// Binding Texture
 	GLActiveTexture(texture_unit int)
-	GLBindTexture(target interface{}, texture interface{})
-	GLTexImage2DFromPixelBuffer(target interface{}, level int, internalformat interface{}, width int, height int, border int, format interface{}, dtype interface{}, pixels []uint8)
-	GLTexImage2DFromImgObject(target interface{}, level int, internalformat interface{}, format interface{}, dtype interface{}, canvas interface{})
-	GLGenerateMipmap(target interface{})
-	GLTexParameteri(target interface{}, pname interface{}, pvalue interface{})
+	GLBindTexture(target uint32, texture interface{})
 
-	// Uniforms
+	// Binding Uniforms
 	GLUniform1i(location interface{}, v0 int)
 	GLUniform1f(location interface{}, v0 float32)
 	GLUniform2f(location interface{}, v0 float32, v1 float32)
@@ -31,25 +34,25 @@ type GLRenderingContext interface {
 	GLUniformMatrix3fv(location interface{}, transpose bool, values []float32)
 	GLUniformMatrix4fv(location interface{}, transpose bool, values []float32)
 
-	// Attributes
-	GLVertexAttribPointer(location interface{}, size int, dtype interface{}, normalized bool, stride_in_byte int, offset_in_byte int)
+	// Binding Attributes
+	GLVertexAttribPointer(location interface{}, size int, dtype uint32, normalized bool, stride_in_byte int, offset_in_byte int)
 	GLEnableVertexAttribArray(location interface{})
 	GLVertexAttribDivisor(location interface{}, divisor int)
 
 	// Preparing to Render
 	GLClearColor(r float32, g float32, b float32, a float32)
-	GLClear(mask interface{})
-	GLEnable(cap interface{})
-	GLDisable(cap interface{})
-	GLDepthFunc(ftn interface{})
-	GLBlendFunc(sfactor interface{}, dfactor interface{})
+	GLClear(mask uint32)
+	GLEnable(cap uint32)
+	GLDisable(cap uint32)
+	GLDepthFunc(ftn uint32)
+	GLBlendFunc(sfactor uint32, dfactor uint32)
 	GLUseProgram(program interface{})
 
 	// Rendering
-	GLDrawArrays(mode interface{}, first int, count int)
-	GLDrawArraysInstanced(mode interface{}, first int, count int, pose_count int)
-	GLDrawElements(mode interface{}, count int, dtype interface{}, offset int)
-	GLDrawElementsInstanced(mode interface{}, element_count int, dtype interface{}, offset int, pose_count int)
+	GLDrawArrays(mode uint32, first int, count int)
+	GLDrawArraysInstanced(mode uint32, first int, count int, pose_count int)
+	GLDrawElements(mode uint32, count int, dtype uint32, offset int)
+	GLDrawElementsInstanced(mode uint32, element_count int, dtype uint32, offset int, pose_count int)
 
 	// WebGL Extensions
 	SetupExtension(extname string)

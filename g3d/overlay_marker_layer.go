@@ -21,12 +21,8 @@ func (self *OverlayMarkerLayer) Render(proj *common.Matrix4, vwmd *common.Matrix
 	// 'Overlay' interface function, called by Renderer
 	renderer := NewRenderer(self.rc)
 	for _, marker := range self.Markers {
-		if marker.poses != nil {
-			renderer.RenderSceneObject(marker, proj, vwmd)
-		} else {
-			vwmd := vwmd.MultiplyToTheRight(&marker.modelmatrix)
-			renderer.RenderSceneObject(marker, proj, vwmd)
-		}
+		vwmd := vwmd.MultiplyToTheRight(&marker.modelmatrix)
+		renderer.RenderSceneObject(marker, proj, vwmd)
 	}
 }
 
@@ -70,9 +66,9 @@ func (self *OverlayMarkerLayer) AddMarkersForTest() *OverlayMarkerLayer {
 	ahead1 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", false)
 	ahead2 := self.CreateArrowHeadMarker(20, "#aaffaa", "#00ff00", false).Translate(0.5, 0.5, 0.5)
 	ahead3 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", true)
-	ahead3.SetupPoses(3, 3, []float32{0, 0, -1, 1, 1, 1, 0, 0, 1})
+	ahead3.SetInstanceBuffer(3, 3, []float32{0, 0, -1, 1, 1, 1, 0, 0, 1})
 	sprite := self.CreateSpriteMarker("/assets/map_marker.png", "#ff0000", [2]float32{20, 20}, "M_BTM", false)
-	sprite.SetupPoses(3, 2, []float32{0, 0, 1, 1, 1, 1})
+	sprite.SetInstanceBuffer(2, 3, []float32{0, 0, 1, 1, 1, 1})
 	return self.AddMarker(ahead1, ahead2, ahead3, sprite)
 }
 
@@ -81,28 +77,22 @@ func (self *OverlayMarkerLayer) AddMarkersForTest() *OverlayMarkerLayer {
 // ----------------------------------------------------------------------------
 
 func (self *OverlayMarkerLayer) CreateArrowMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
-	geometry := g2d.NewGeometry() // 2D geometry of ARROW pointing left, with tip at (0,0)
-	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
-	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
-	geometry.SetEdges([][]uint32{{0, 1, 2, 3, 4, 5, 6, 0}})
-	geometry.Scale(size, size).BuildDataBuffers(true, true, true) // marker size is 10 pixels
-	material, _ := self.rc.CreateMaterial(color)
-	material.SetColorForDrawMode(2, outline_color)
+	geometry := g2d.NewGeometry_Arrow().Scale(size, size) // 2D geometry of ARROW pointing left, with tip at (0,0)
+	geometry.BuildDataBuffers(true, true, true)           //    (marker size is 'size' in pixels)
+	material, _ := self.rc.CreateMaterial(color)          // material with basic color for faces
+	material.SetColorForDrawMode(2, outline_color)        //    (extra color added for edges)
 	shader := self.GetShaderForMarker(use_poses)
-	marker := NewSceneObject(geometry, material, nil, shader, shader)
+	marker := NewSceneObject(geometry, material, nil, shader, shader) // 3D SceneObject with 2D Geomery
 	return marker
 }
 
 func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
-	geometry := g2d.NewGeometry() // 2D geometry of ARROW pointing left, with tip at (0,0)
-	geometry.SetVertices([][2]float32{{0, 0}, {1, -0.6}, {1, +0.6}})
-	geometry.SetFaces([][]uint32{{0, 1, 2}})
-	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})
-	geometry.Scale(size, size).BuildDataBuffers(true, true, true) // marker size is 10 pixels
-	material, _ := self.rc.CreateMaterial(color)
-	material.SetColorForDrawMode(2, outline_color)
+	geometry := g2d.NewGeometry_ArrowHead().Scale(size, size) // 2D geometry of ARROW pointing left, with tip at (0,0)
+	geometry.BuildDataBuffers(true, true, true)               //    (marker size is 'size' in pixels)
+	material, _ := self.rc.CreateMaterial(color)              // material with basic color for faces
+	material.SetColorForDrawMode(2, outline_color)            //    (extra color added for edges)
 	shader := self.GetShaderForMarker(use_poses)
-	marker := NewSceneObject(geometry, material, nil, shader, shader)
+	marker := NewSceneObject(geometry, material, nil, shader, shader) // 3D SceneObject with 2D Geomery
 	return marker
 }
 

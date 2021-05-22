@@ -1,18 +1,17 @@
-// +build js,wasm
 package main
 
 import (
 	"fmt"
 
-	"github.com/go4orward/gigl/env/webgl1"
+	"github.com/go4orward/gigl/env/webgl10"
 	"github.com/go4orward/gigl/g2d"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/webgl2d_example.go'.
-	fmt.Println("Hello WebGL!")                         // printed in the browser console
-	wcanvas, err := webgl1.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL 1.0")                       // printed in the browser console
+	wcanvas, err := webgl10.NewWebGLCanvas("wasmcanvas") // ID of canvas element
 	if err != nil {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
@@ -26,8 +25,11 @@ func main() {
 	scnobj := g2d.NewSceneObject(geometry, material, nil, shader, shader).Rotate(40)
 	scene := g2d.NewScene("#ffffff").Add(scnobj) // scene holds all the SceneObjects to be rendered
 	camera := g2d.NewCamera(rc.GetWH(), 2, 1)    // FOV 2 means range of [-1,+1] in X, ZoomLevel is 1.0
-	renderer := g2d.NewRenderer(rc)              // set up the renderer
-	renderer.Clear(scene)                        // prepare to render (clearing to white background)
-	renderer.RenderScene(scene, camera)          // render the scene (iterating over all the SceneObjects in it)
-	renderer.RenderAxes(camera, 1.0)             // render the axes (just for visual reference)
+
+	renderer := g2d.NewRenderer(rc)     // set up the renderer
+	renderer.Clear(scene)               // prepare to render (clearing to white background)
+	renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
+	renderer.RenderAxes(camera, 1.0)    // render the axes (just for visual reference)
+
+	wcanvas.Run(nil)
 }

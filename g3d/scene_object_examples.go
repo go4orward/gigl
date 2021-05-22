@@ -6,16 +6,6 @@ import (
 	"github.com/go4orward/gigl"
 )
 
-func NewSceneObject_3DAxes(rc gigl.GLRenderingContext, length float32) *SceneObject {
-	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
-	geometry := NewGeometry() // create an empty geometry
-	geometry.SetVertices([][3]float32{{0, 0, 0}, {length, 0, 0}, {0, length, 0}, {0, 0, length}})
-	geometry.SetEdges([][]uint32{{0, 1}, {0, 2}, {0, 3}})  // add three edges
-	geometry.BuildDataBuffers(true, true, false)           // build data buffers for vertices and edges
-	shader := NewShader_3DAxes(rc)                         // create shader, and set its bindings
-	return NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object (draw EDGES only)
-}
-
 func NewSceneObject_CylinderWireframe(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a cylinder, to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works)
@@ -43,14 +33,15 @@ func NewSceneObject_CubeInstances(rc gigl.GLRenderingContext) *SceneObject {
 	material, _ := rc.CreateMaterial("#888888")                    // create material
 	shader := NewShader_InstancePoseColor(rc)                      // create shader, and set its bindings
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	scnobj.SetupPoses(6, 10*10*10, nil)
+	scnobj.SetInstanceBuffer(10*10*10, 6, nil)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
 			for k := 0; k < 10; k++ {
-				scnobj.SetPoseValues(i*100+j*10+k, 0, float32(i)/10, float32(j)/10, float32(k)/10) // tx, ty, tz
+				scnobj.SetInstancePoseValues(i*100+j*10+k, 0, float32(i)/10, float32(j)/10, float32(k)/10) // tx, ty, tz
 				ii, jj, kk := math.Abs(float64(i)-5)/5, math.Abs(float64(j)-5)/5, math.Abs(float64(k)-5)/5
 				r, g, b := float32(ii), float32(jj), float32(kk)
-				scnobj.SetPoseValues(i*100+j*10+k, 3, r, g, b) // color
+				// r, g, b := uint8(float32(ii)*255), uint8(float32(jj)*255), uint8(float32(kk)*255)
+				scnobj.SetInstancePoseValues(i*100+j*10+k, 3, r, g, b, 255) // color
 			}
 		}
 	}

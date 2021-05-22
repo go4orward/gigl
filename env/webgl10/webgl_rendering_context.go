@@ -1,4 +1,4 @@
-package webgl1
+package webgl10
 
 import (
 	"errors"
@@ -33,48 +33,45 @@ func NewWebGLRenderingContext(canvas js.Value) (*WebGLRenderingContext, error) {
 	self.wh[0] = canvas.Get("clientWidth").Int()
 	self.wh[1] = canvas.Get("clientHeight").Int()
 	// get WebGL constants
-	self.constants.ARRAY_BUFFER = context.Get("ARRAY_BUFFER")
-	self.constants.BLEND = context.Get("BLEND")
-	self.constants.BYTE = context.Get("BYTE")
-	self.constants.CLAMP_TO_EDGE = context.Get("CLAMP_TO_EDGE")
-	self.constants.COLOR_BUFFER_BIT = context.Get("COLOR_BUFFER_BIT")
-	self.constants.COMPILE_STATUS = context.Get("COMPILE_STATUS")
-	self.constants.DEPTH_BUFFER_BIT = context.Get("DEPTH_BUFFER_BIT")
-	self.constants.DEPTH_TEST = context.Get("DEPTH_TEST")
-	self.constants.ELEMENT_ARRAY_BUFFER = context.Get("ELEMENT_ARRAY_BUFFER")
-	self.constants.FLOAT = context.Get("FLOAT")
-	self.constants.FRAGMENT_SHADER = context.Get("FRAGMENT_SHADER")
-	self.constants.LEQUAL = context.Get("LEQUAL")
-	self.constants.LINEAR = context.Get("LINEAR")
-	self.constants.LINES = context.Get("LINES")
-	self.constants.LINK_STATUS = context.Get("LINK_STATUS")
-	self.constants.NEAREST = context.Get("NEAREST")
-	self.constants.ONE = context.Get("ONE")
-	self.constants.ONE_MINUS_SRC_ALPHA = context.Get("ONE_MINUS_SRC_ALPHA")
-	self.constants.POINTS = context.Get("POINTS")
-	self.constants.RGBA = context.Get("RGBA")
-	self.constants.SRC_ALPHA = context.Get("SRC_ALPHA")
-	self.constants.STATIC_DRAW = context.Get("STATIC_DRAW")
-	self.constants.TEXTURE_2D = context.Get("TEXTURE_2D")
-	self.constants.TEXTURE0 = context.Get("TEXTURE0")
-	self.constants.TEXTURE1 = context.Get("TEXTURE1")
-	self.constants.TEXTURE_MIN_FILTER = context.Get("TEXTURE_MIN_FILTER")
-	self.constants.TEXTURE_WRAP_S = context.Get("TEXTURE_WRAP_S")
-	self.constants.TEXTURE_WRAP_T = context.Get("TEXTURE_WRAP_T")
-	self.constants.TRIANGLES = context.Get("TRIANGLES")
-	self.constants.UNSIGNED_BYTE = context.Get("UNSIGNED_BYTE")
-	self.constants.UNSIGNED_INT = context.Get("UNSIGNED_INT")
-	self.constants.UNSIGNED_SHORT = context.Get("UNSIGNED_SHORT")
-	self.constants.VERTEX_SHADER = context.Get("VERTEX_SHADER")
+	self.constants.ARRAY_BUFFER = uint32(context.Get("ARRAY_BUFFER").Int())
+	self.constants.BLEND = uint32(context.Get("BLEND").Int())
+	self.constants.BYTE = uint32(context.Get("BYTE").Int())
+	self.constants.CLAMP_TO_EDGE = uint32(context.Get("CLAMP_TO_EDGE").Int())
+	self.constants.COLOR_BUFFER_BIT = uint32(context.Get("COLOR_BUFFER_BIT").Int())
+	self.constants.COMPILE_STATUS = uint32(context.Get("COMPILE_STATUS").Int())
+	self.constants.DEPTH_BUFFER_BIT = uint32(context.Get("DEPTH_BUFFER_BIT").Int())
+	self.constants.DEPTH_TEST = uint32(context.Get("DEPTH_TEST").Int())
+	self.constants.ELEMENT_ARRAY_BUFFER = uint32(context.Get("ELEMENT_ARRAY_BUFFER").Int())
+	self.constants.FLOAT = uint32(context.Get("FLOAT").Int())
+	self.constants.FRAGMENT_SHADER = uint32(context.Get("FRAGMENT_SHADER").Int())
+	self.constants.LEQUAL = uint32(context.Get("LEQUAL").Int())
+	self.constants.LESS = uint32(context.Get("LESS").Int())
+	self.constants.LINEAR = uint32(context.Get("LINEAR").Int())
+	self.constants.LINES = uint32(context.Get("LINES").Int())
+	self.constants.LINK_STATUS = uint32(context.Get("LINK_STATUS").Int())
+	self.constants.NEAREST = uint32(context.Get("NEAREST").Int())
+	self.constants.ONE = uint32(context.Get("ONE").Int())
+	self.constants.ONE_MINUS_SRC_ALPHA = uint32(context.Get("ONE_MINUS_SRC_ALPHA").Int())
+	self.constants.POINTS = uint32(context.Get("POINTS").Int())
+	self.constants.RGBA = uint32(context.Get("RGBA").Int())
+	self.constants.SRC_ALPHA = uint32(context.Get("SRC_ALPHA").Int())
+	self.constants.STATIC_DRAW = uint32(context.Get("STATIC_DRAW").Int())
+	self.constants.TEXTURE_2D = uint32(context.Get("TEXTURE_2D").Int())
+	self.constants.TEXTURE0 = uint32(context.Get("TEXTURE0").Int())
+	self.constants.TEXTURE1 = uint32(context.Get("TEXTURE1").Int())
+	self.constants.TEXTURE_MIN_FILTER = uint32(context.Get("TEXTURE_MIN_FILTER").Int())
+	self.constants.TEXTURE_WRAP_S = uint32(context.Get("TEXTURE_WRAP_S").Int())
+	self.constants.TEXTURE_WRAP_T = uint32(context.Get("TEXTURE_WRAP_T").Int())
+	self.constants.TRIANGLES = uint32(context.Get("TRIANGLES").Int())
+	self.constants.UNSIGNED_BYTE = uint32(context.Get("UNSIGNED_BYTE").Int())
+	self.constants.UNSIGNED_INT = uint32(context.Get("UNSIGNED_INT").Int())
+	self.constants.UNSIGNED_SHORT = uint32(context.Get("UNSIGNED_SHORT").Int())
+	self.constants.VERTEX_SHADER = uint32(context.Get("VERTEX_SHADER").Int())
 	return &self, nil
 }
 
 func (self *WebGLRenderingContext) GetWH() [2]int {
 	return self.wh
-}
-
-func (self *WebGLRenderingContext) GetContext() js.Value {
-	return self.context
 }
 
 func (self *WebGLRenderingContext) GetConstants() *gigl.GLConstants {
@@ -111,41 +108,63 @@ func (self *WebGLRenderingContext) GetEnvVariable(vname string, dtype string) in
 }
 
 // ----------------------------------------------------------------------------
-// Create Material & Shader
+// Material & Shader
 // ----------------------------------------------------------------------------
 
 func (self *WebGLRenderingContext) CreateMaterial(source string, options ...interface{}) (gigl.GLMaterial, error) {
-	return NewWebGLMaterial(self, source, options...)
+	return new_webgl_material(self, source, options...)
 }
 
 func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
-	return NewWebGLShader(self, vertex_shader, fragment_shader)
+	return new_webgl_shader(self, vertex_shader, fragment_shader)
 }
 
 // ----------------------------------------------------------------------------
-// WebGL Data Buffer
+// WebGL DataBuffer
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) CreateDataBuffer(target interface{}, data_slice interface{}) interface{} {
+func (self *WebGLRenderingContext) CreateDataBufferVAO() *gigl.VAO {
+	return &gigl.VAO{}
+}
+
+func (self *WebGLRenderingContext) CreateVtxDataBuffer(data_slice []float32) interface{} {
 	// 'target' : c.ARRAY_BUFFER or c.ELEMENT_ARRAY_BUFFER
 	if data_slice == nil {
 		return nil
 	}
 	c := self.GetConstants()
-	buffer := self.context.Call("createBuffer", c.ARRAY_BUFFER.(js.Value)) // TODO: no argument needed
-	self.context.Call("bindBuffer", target.(js.Value), buffer)
+	buffer := self.context.Call("createBuffer")
+	self.context.Call("bindBuffer", js.ValueOf(c.ARRAY_BUFFER), buffer)
 	var js_typed_array = self.ConvertGoSliceToJsTypedArray(data_slice)
-	self.context.Call("bufferData", target.(js.Value), js_typed_array, c.STATIC_DRAW.(js.Value))
-	self.context.Call("bindBuffer", target.(js.Value), nil)
+	self.context.Call("bufferData", js.ValueOf(c.ARRAY_BUFFER), js_typed_array, js.ValueOf(c.STATIC_DRAW))
+	self.context.Call("bindBuffer", js.ValueOf(c.ARRAY_BUFFER), nil)
 	return buffer
 }
 
-func (self *WebGLRenderingContext) GLBindBuffer(target interface{}, buffer interface{}) {
+func (self *WebGLRenderingContext) CreateIdxDataBuffer(data_slice []uint32) interface{} {
+	// 'target' : c.ARRAY_BUFFER or c.ELEMENT_ARRAY_BUFFER
+	if data_slice == nil {
+		return nil
+	}
+	c := self.GetConstants()
+	buffer := self.context.Call("createBuffer")
+	self.context.Call("bindBuffer", js.ValueOf(c.ELEMENT_ARRAY_BUFFER), buffer)
+	var js_typed_array = self.ConvertGoSliceToJsTypedArray(data_slice)
+	self.context.Call("bufferData", js.ValueOf(c.ELEMENT_ARRAY_BUFFER), js_typed_array, js.ValueOf(c.STATIC_DRAW))
+	self.context.Call("bindBuffer", js.ValueOf(c.ELEMENT_ARRAY_BUFFER), nil)
+	return buffer
+}
+
+// ----------------------------------------------------------------------------
+// Binding DataBuffer
+// ----------------------------------------------------------------------------
+
+func (self *WebGLRenderingContext) GLBindBuffer(target uint32, buffer interface{}) {
 	// 'bind_target' : c.ARRAY_BUFFER or c.ELEMENT_ARRAY_BUFFER
 	if buffer == nil {
-		self.context.Call("bindBuffer", target.(js.Value), js.Null())
+		self.context.Call("bindBuffer", js.ValueOf(target), js.Null())
 	} else {
-		self.context.Call("bindBuffer", target.(js.Value), buffer.(js.Value))
+		self.context.Call("bindBuffer", js.ValueOf(target), buffer.(js.Value))
 	}
 }
 
@@ -153,41 +172,13 @@ func (self *WebGLRenderingContext) GLBindBuffer(target interface{}, buffer inter
 // Binding Texture
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) GLCreateTexture() interface{} {
-	return self.context.Call("createTexture")
-}
-
 func (self *WebGLRenderingContext) GLActiveTexture(texture_unit int) {
-	js_texture_unit := js.ValueOf(self.constants.TEXTURE0.(js.Value).Int() + texture_unit)
+	js_texture_unit := js.ValueOf(js.ValueOf(self.constants.TEXTURE0 + uint32(texture_unit)))
 	self.context.Call("activeTexture", js_texture_unit)
 }
 
-func (self *WebGLRenderingContext) GLBindTexture(target interface{}, texture interface{}) {
-	// 'binding_target' : TEXTURE_2D
-	self.context.Call("bindTexture", target.(js.Value), texture.(js.Value))
-}
-
-func (self *WebGLRenderingContext) GLTexImage2DFromPixelBuffer(target interface{}, level int, internalformat interface{}, width int, height int, border int, format interface{}, dtype interface{}, pixbuf []uint8) {
-	js_buffer := self.ConvertGoSliceToJsTypedArray(pixbuf)
-	// rc.Context.Call("texImage2D", c.TEXTURE_2D, 0, c.RGBA, size.X, size.Y, 0, c.RGBA, c.UNSIGNED_BYTE, js_buffer)
-	self.context.Call("texImage2D", target.(js.Value), level, internalformat.(js.Value), width, height, border, format.(js.Value), dtype.(js.Value), js_buffer)
-
-}
-
-func (self *WebGLRenderingContext) GLTexImage2DFromImgObject(target interface{}, level int, internalformat interface{}, format interface{}, dtype interface{}, imgobj interface{}) {
-	// rc.Context.Call("texImage2D", c.TEXTURE_2D, 0, c.RGBA, c.RGBA, c.UNSIGNED_BYTE, canvas)
-	// 'imgobj' can be ImageData, ImageBitmap, HTMLImageElement, HTMLCanvasElement, or HTMLVideoElement
-	self.context.Call("texImage2D", target.(js.Value), level, internalformat.(js.Value), format.(js.Value), dtype.(js.Value), imgobj.(js.Value))
-}
-
-func (self *WebGLRenderingContext) GLGenerateMipmap(target interface{}) {
-	// rc.Context.Call("generateMipmap", c.TEXTURE_2D)
-	self.context.Call("generateMipmap", target.(js.Value))
-
-}
-
-func (self *WebGLRenderingContext) GLTexParameteri(target interface{}, pname interface{}, pvalue interface{}) {
-	self.context.Call("texParameteri", target.(js.Value), pname.(js.Value), pvalue.(js.Value))
+func (self *WebGLRenderingContext) GLBindTexture(target uint32, texture interface{}) {
+	self.context.Call("bindTexture", js.ValueOf(target), texture.(js.Value)) // 'binding_target' : TEXTURE_2D
 }
 
 // ----------------------------------------------------------------------------
@@ -228,8 +219,8 @@ func (self *WebGLRenderingContext) GLUniformMatrix4fv(location interface{}, tran
 // Binding Attributes
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) GLVertexAttribPointer(location interface{}, size int, dtype interface{}, normalized bool, stride_in_byte int, offset_in_byte int) {
-	self.context.Call("vertexAttribPointer", location.(js.Value), size, dtype.(js.Value), normalized, stride_in_byte, offset_in_byte)
+func (self *WebGLRenderingContext) GLVertexAttribPointer(location interface{}, size int, dtype uint32, normalized bool, stride_in_byte int, offset_in_byte int) {
+	self.context.Call("vertexAttribPointer", location.(js.Value), size, js.ValueOf(dtype), normalized, stride_in_byte, offset_in_byte)
 }
 
 func (self *WebGLRenderingContext) GLEnableVertexAttribArray(location interface{}) {
@@ -251,24 +242,24 @@ func (self *WebGLRenderingContext) GLClearColor(r float32, g float32, b float32,
 	self.context.Call("clearColor", r, g, b, a)
 }
 
-func (self *WebGLRenderingContext) GLClear(mask interface{}) {
-	self.context.Call("clear", mask.(js.Value))
+func (self *WebGLRenderingContext) GLClear(mask uint32) {
+	self.context.Call("clear", js.ValueOf(mask))
 }
 
-func (self *WebGLRenderingContext) GLEnable(cap interface{}) {
-	self.context.Call("enable", cap.(js.Value))
+func (self *WebGLRenderingContext) GLEnable(cap uint32) {
+	self.context.Call("enable", js.ValueOf(cap))
 }
 
-func (self *WebGLRenderingContext) GLDisable(cap interface{}) {
-	self.context.Call("disable", cap.(js.Value))
+func (self *WebGLRenderingContext) GLDisable(cap uint32) {
+	self.context.Call("disable", js.ValueOf(cap))
 }
 
-func (self *WebGLRenderingContext) GLDepthFunc(ftn interface{}) {
-	self.context.Call("depthFunc", ftn.(js.Value))
+func (self *WebGLRenderingContext) GLDepthFunc(ftn uint32) {
+	self.context.Call("depthFunc", js.ValueOf(ftn))
 }
 
-func (self *WebGLRenderingContext) GLBlendFunc(sfactor interface{}, dfactor interface{}) {
-	self.context.Call("blendFunc", sfactor.(js.Value), dfactor.(js.Value))
+func (self *WebGLRenderingContext) GLBlendFunc(sfactor uint32, dfactor uint32) {
+	self.context.Call("blendFunc", js.ValueOf(sfactor), js.ValueOf(dfactor))
 }
 
 func (self *WebGLRenderingContext) GLUseProgram(shader_program interface{}) {
@@ -279,29 +270,29 @@ func (self *WebGLRenderingContext) GLUseProgram(shader_program interface{}) {
 // Rendering
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) GLDrawArrays(mode interface{}, first int, count int) {
+func (self *WebGLRenderingContext) GLDrawArrays(mode uint32, first int, count int) {
 	// 'mode' : POINTS
-	self.context.Call("drawArrays", mode.(js.Value), first, count)
+	self.context.Call("drawArrays", js.ValueOf(mode), first, count)
 }
 
-func (self *WebGLRenderingContext) GLDrawArraysInstanced(mode interface{}, first int, count int, pose_count int) {
+func (self *WebGLRenderingContext) GLDrawArraysInstanced(mode uint32, first int, count int, pose_count int) {
 	// 'mode' : POINTS
 	if !self.ext_angle.IsNull() {
-		self.ext_angle.Call("drawArraysInstancedANGLE", mode.(js.Value), first, count, pose_count)
+		self.ext_angle.Call("drawArraysInstancedANGLE", js.ValueOf(mode), first, count, pose_count)
 	}
 }
 
-func (self *WebGLRenderingContext) GLDrawElements(mode interface{}, count int, dtype interface{}, offset int) {
+func (self *WebGLRenderingContext) GLDrawElements(mode uint32, count int, dtype uint32, offset int) {
 	// 'mode'  : LINES, TRIANGLES
 	// 'dtype' : UNSIGNED_INT
-	self.context.Call("drawElements", mode.(js.Value), count, dtype.(js.Value), offset)
+	self.context.Call("drawElements", js.ValueOf(mode), count, js.ValueOf(dtype), offset)
 }
 
-func (self *WebGLRenderingContext) GLDrawElementsInstanced(mode interface{}, element_count int, dtype interface{}, offset int, pose_count int) {
+func (self *WebGLRenderingContext) GLDrawElementsInstanced(mode uint32, element_count int, dtype uint32, offset int, pose_count int) {
 	// 'mode'  : LINES, TRIANGLES
 	// 'dtype' : UNSIGNED_INT
 	if !self.ext_angle.IsNull() {
-		self.ext_angle.Call("drawElementsInstancedANGLE", mode.(js.Value), element_count, dtype.(js.Value), offset, pose_count)
+		self.ext_angle.Call("drawElementsInstancedANGLE", js.ValueOf(mode), element_count, js.ValueOf(dtype), offset, pose_count)
 	}
 }
 

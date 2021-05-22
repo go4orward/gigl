@@ -42,3 +42,19 @@ func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32
 	geometry.AddFace(face_indices)
 	return geometry
 }
+
+func NewGeometry_Arrow() *Geometry {
+	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0) and length 1.0
+	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
+	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
+	geometry.SetEdges([][]uint32{{0, 1, 2, 3, 4, 5, 6, 0}})
+	return geometry
+}
+
+func NewGeometry_ArrowHead() *Geometry {
+	geometry := NewGeometry() // ARROW_HEAD pointing left, with tip at (0,0) and length 1.0
+	geometry.SetVertices([][2]float32{{0, 0}, {1, -0.6}, {1, +0.6}})
+	geometry.SetFaces([][]uint32{{0, 1, 2}})
+	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})
+	return geometry
+}

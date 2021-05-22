@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/g3d/c3d"
 )
@@ -20,21 +19,16 @@ type Geometry struct {
 	tuvs  [][]float32  // texture uv coordinates (PER_FACE [nfaces][6] or PER_VERT [nverts][2])
 	norms [][3]float32 // normal vectors (PER_FACE [nfaces][3] or PER_VERT [nverts][3])
 
-	data_buffer_vpoints []float32 // serialized data buffer for vertex points : COORD[]
-	data_buffer_fpoints []float32 // serialized data buffer for PER_FACE vertex points : COORD[3] + (UV[2]) + (NORMAL[3])
-	data_buffer_lines   []uint32  // serialized data buffer for edge lines : vidx[2]
-	data_buffer_faces   []uint32  // serialized data buffer for face triangles : vidx[3]
+	dbuffer_vpoint      []float32 // data buffer for vertex points : COORD[] + (UV[2]) + (NORMAL[3])
+	dbuffer_fpoint      []float32 // data buffer for PER_FACE vertex points : COORD[3] + (UV[2]) + (NORMAL[3])
+	dbuffer_line        []uint32  // data buffer for edge lines     : list of vertex indices
+	dbuffer_face        []uint32  // data buffer for face triangles : list of vertex indices
+	dbuffer_vpoint_info [4]int    // data buffer info : [ stride, xyz_size, uv_size, normal_size ]
+	dbuffer_fpoint_info [4]int    // data buffer info : [ stride, xyz_size, uv_size, normal_size ]
 
 	// Note that, for PER_FACE texture UV-coordinates and normal vectors, vertices are duplicated for each face
 	fpoint_vidx_list  []uint32 // index of vertex_list of each face after PER_FACE data duplication
 	fpoint_vert_total int      // total count of vertices after PER_FACE data duplication
-	fpoint_info       [4]int   // data size of a point (for triangles) : [ stride, xyz_offset, uv_offset, normal_offset ]
-	vpoint_info       [4]int   // data size of a point (for points & lines)
-
-	rcbuffer_vpoints interface{} // RenderingContext data buffer for data_buffer_vpoints (points for vertices)
-	rcbuffer_fpoints interface{} // RenderingContext data buffer for data_buffer_fpoints (points for PER_FACE vertices)
-	rcbuffer_lines   interface{} // RenderingContext data buffer for data_buffer_lines (indices for lines)
-	rcbuffer_faces   interface{} // RenderingContext data buffer for data_buffer_faces (indices for triangles)
 }
 
 func NewGeometry() *Geometry {
@@ -51,21 +45,15 @@ func (self *Geometry) Clear(geom bool, data_buf bool, webgl_buf bool) *Geometry 
 		self.tuvs = [][]float32{}
 		self.norms = [][3]float32{}
 	}
-	if data_buf || geom {
-		self.data_buffer_vpoints = nil
-		self.data_buffer_fpoints = nil
-		self.data_buffer_lines = nil
-		self.data_buffer_faces = nil
+	if geom || data_buf {
+		self.dbuffer_vpoint = nil
+		self.dbuffer_fpoint = nil
+		self.dbuffer_line = nil
+		self.dbuffer_face = nil
+		self.dbuffer_fpoint_info = [4]int{0, 0, 0, 0}
+		self.dbuffer_vpoint_info = [4]int{0, 0, 0, 0}
 		self.fpoint_vidx_list = nil
 		self.fpoint_vert_total = 0
-		self.fpoint_info = [4]int{0, 0, 0, 0}
-		self.vpoint_info = [4]int{0, 0, 0, 0}
-	}
-	if webgl_buf || data_buf || geom {
-		self.rcbuffer_vpoints = nil
-		self.rcbuffer_fpoints = nil
-		self.rcbuffer_lines = nil
-		self.rcbuffer_faces = nil
 	}
 	return self
 }
@@ -78,35 +66,28 @@ func (self *Geometry) ShowInfo() {
 	fmt.Printf("3DGeometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
 	if len(self.tuvs) > 0 {
 		if self.HasTextureFor("VERTEX") {
-			fmt.Printf("    texture UV coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
+			fmt.Printf("    texture coords : [%d][]float32   for each vertex\n", len(self.tuvs))
 		} else if self.HasTextureFor("FACE") {
-			fmt.Printf("    texture UV coords   : [%d][]float32   for each face\n", len(self.tuvs))
+			fmt.Printf("    texture coords : [%d][]float32   for each face\n", len(self.tuvs))
 		} else {
-			fmt.Printf("    texture UV coords   : [%d][]float32   incomplete\n", len(self.tuvs))
+			fmt.Printf("    texture coords : [%d][]float32   incomplete\n", len(self.tuvs))
 		}
 	}
 	if len(self.norms) > 0 {
 		if self.HasNormalFor("VERTEX") {
-			fmt.Printf("    normal vectors      : [%d][3]float32   for each vertex\n", len(self.norms))
+			fmt.Printf("    normal vectors : [%d][3]float32   for each vertex\n", len(self.norms))
 		} else if self.HasNormalFor("FACE") {
-			fmt.Printf("    normal vectors      : [%d][3]float32   for each face\n", len(self.norms))
+			fmt.Printf("    normal vectors : [%d][3]float32   for each face\n", len(self.norms))
 		} else {
-			fmt.Printf("    normal vectors      : [%d][3]float32   incomplete\n", len(self.norms))
+			fmt.Printf("    normal vectors : [%d][3]float32   incomplete\n", len(self.norms))
 		}
 	}
-	wb := func(wbuffer interface{}) string {
-		if wbuffer == nil {
-			return "X"
-		} else {
-			return "O"
-		}
-	}
-	fmt.Printf("    data_buffer_vpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_vpoints), wb(self.rcbuffer_vpoints), self.vpoint_info)
-	fmt.Printf("    data_buffer_fpoints : %4d (WebGL:%s)  pinfo=%v\n", len(self.data_buffer_fpoints), wb(self.rcbuffer_fpoints), self.fpoint_info)
-	fmt.Printf("    data_buffer_lines   : %4d (WebGL:%s)\n", len(self.data_buffer_lines), wb(self.rcbuffer_lines))
-	fmt.Printf("    data_buffer_faces   : %4d (WebGL:%s)\n", len(self.data_buffer_faces), wb(self.rcbuffer_faces))
-	// fmt.Printf("    data_buffer_vpoints : %v\n", self.data_buffer_vpoints)
-	// fmt.Printf("    data_buffer_fpoints : %v\n", self.data_buffer_fpoints)
+	fmt.Printf("    dbuffer_vpoint : %4d  pinfo=%v\n", len(self.dbuffer_vpoint)/self.dbuffer_vpoint_info[0], self.dbuffer_vpoint_info)
+	fmt.Printf("    dbuffer_fpoint : %4d  pinfo=%v\n", len(self.dbuffer_fpoint)/self.dbuffer_fpoint_info[0], self.dbuffer_fpoint_info)
+	fmt.Printf("    dbuffer_line   : %4d  \n", len(self.dbuffer_line))
+	fmt.Printf("    dbuffer_face   : %4d  \n", len(self.dbuffer_face))
+	// fmt.Printf("dbuffer_vpoint : %v\n", self.dbuffer_vpoint)
+	// fmt.Printf("dbuffer_fpoint : %v\n", self.dbuffer_fpoint)
 }
 
 // ----------------------------------------------------------------------------
@@ -388,12 +369,8 @@ func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal [3]floa
 }
 
 // ----------------------------------------------------------------------------
-// Build Data Buffers (serialized)
+// Build Data Buffers
 // ----------------------------------------------------------------------------
-
-func (self *Geometry) IsDataBufferReady() bool {
-	return len(self.data_buffer_vpoints) > 0 || len(self.data_buffer_fpoints) > 0
-}
 
 func (self *Geometry) count_fpoint_vidx_list() int {
 	self.fpoint_vert_total = 0
@@ -413,7 +390,7 @@ func (self *Geometry) get_fpoint_new_vidx(fidx int, i int) int {
 }
 
 func (self *Geometry) buffer_copy_xyz(buf []float32, pinfo [4]int, new_vidx int, vidx int) {
-	stride, offset := pinfo[0], pinfo[1] // XY coordinates in 3 bytes
+	stride, offset := pinfo[0], 0 // XY coordinates in 3 bytes
 	pos := new_vidx*stride + offset
 	buf[pos+0] = self.verts[vidx][0]
 	buf[pos+1] = self.verts[vidx][1]
@@ -421,7 +398,7 @@ func (self *Geometry) buffer_copy_xyz(buf []float32, pinfo [4]int, new_vidx int,
 }
 
 func (self *Geometry) buffer_copy_tuv(buf []float32, pinfo [4]int, new_vidx int, tuv_idx int, tuv_offset int) {
-	stride, offset := pinfo[0], pinfo[2] // UV texture coordinates in 1 byte
+	stride, offset := pinfo[0], pinfo[1] // UV texture coordinates in 1 byte
 	u := uint32(self.tuvs[tuv_idx][tuv_offset+0] * 65535)
 	v := uint32(self.tuvs[tuv_idx][tuv_offset+1] * 65535)
 	pos := new_vidx*stride + offset
@@ -429,7 +406,7 @@ func (self *Geometry) buffer_copy_tuv(buf []float32, pinfo [4]int, new_vidx int,
 }
 
 func (self *Geometry) buffer_copy_nor(buf []float32, pinfo [4]int, new_vidx int, nor_idx int) {
-	stride, offset := pinfo[0], pinfo[3] // normal vector in 1 byte
+	stride, offset := pinfo[0], pinfo[1]+pinfo[2] // normal vector in 1 byte
 	nx := uint32(self.norms[nor_idx][0] * 127)
 	ny := uint32(self.norms[nor_idx][1] * 127)
 	nz := uint32(self.norms[nor_idx][2] * 127)
@@ -439,8 +416,8 @@ func (self *Geometry) buffer_copy_nor(buf []float32, pinfo [4]int, new_vidx int,
 
 func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_faces bool) {
 	// create data buffer for vertex points
-	self.data_buffer_vpoints, self.vpoint_info = nil, [4]int{0, 0, 0, 0}
-	self.data_buffer_fpoints, self.fpoint_info = nil, [4]int{0, 0, 0, 0}
+	self.dbuffer_vpoint, self.dbuffer_vpoint_info = nil, [4]int{0, 0, 0, 0}
+	self.dbuffer_fpoint, self.dbuffer_fpoint_info = nil, [4]int{0, 0, 0, 0}
 	points_per_face := false
 	if for_faces {
 		points_per_face = self.HasNormalFor("FACE") || self.HasTextureFor("FACE")
@@ -448,103 +425,103 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 			self.count_fpoint_vidx_list()
 		}
 		if self.HasNormalFor("FACE") && self.HasTextureFor("FACE") {
-			self.fpoint_info = [4]int{(3 + 1 + 1), 0, 3, 4} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 1), 3, 1, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, self.fpoint_vert_total*self.dbuffer_fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
 					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
-					self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
-					self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx, i*2)
-					self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx)
+					self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
+					self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx, i*2)
+					self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx)
 				}
 			}
 		} else if self.HasNormalFor("FACE") && self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [4]int{(3 + 1 + 1), 0, 3, 4} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 1), 3, 1, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, self.fpoint_vert_total*self.dbuffer_fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
 					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
-					self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
-					self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx, 0)
-					self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx)
+					self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
+					self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx, 0)
+					self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx)
 				}
 			}
 		} else if self.HasNormalFor("FACE") && !self.HasTextureFor("") {
-			self.fpoint_info = [4]int{(3 + 0 + 1), 0, 0, 3} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 0 + 1), 3, 0, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, self.fpoint_vert_total*self.dbuffer_fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
 					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
-					self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
-					self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx)
+					self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
+					self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx)
 				}
 			}
 		} else if self.HasNormalFor("VERTEX") && self.HasTextureFor("FACE") {
-			self.fpoint_info = [4]int{(3 + 1 + 1), 0, 3, 4} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 1), 3, 1, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, self.fpoint_vert_total*self.dbuffer_fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
 					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
-					self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
-					self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx, i*2)
-					self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
+					self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
+					self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx, i*2)
+					self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
 				}
 			}
 		} else if self.HasNormalFor("VERTEX") && self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [4]int{(3 + 1 + 1), 0, 3, 4} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 1), 3, 1, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, len(self.verts)*self.dbuffer_fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
-				self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx, 0)
-				self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
+				self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
+				self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx, 0)
+				self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
 			}
-			self.data_buffer_vpoints = self.data_buffer_fpoints
-			self.vpoint_info = self.fpoint_info
+			self.dbuffer_vpoint = self.dbuffer_fpoint
+			self.dbuffer_vpoint_info = self.dbuffer_fpoint_info
 		} else if self.HasNormalFor("VERTEX") && !self.HasTextureFor("") {
-			self.fpoint_info = [4]int{(3 + 0 + 1), 0, 0, 3} // size, xyz_off, uv_off, normal_off
-			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 0 + 1), 3, 0, 1} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, len(self.verts)*self.dbuffer_fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
-				self.buffer_copy_nor(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
+				self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
+				self.buffer_copy_nor(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
 			}
-			self.data_buffer_vpoints = self.data_buffer_fpoints
-			self.vpoint_info = self.fpoint_info
+			self.dbuffer_vpoint = self.dbuffer_fpoint
+			self.dbuffer_vpoint_info = self.dbuffer_fpoint_info
 		} else if !self.HasNormalFor("") && self.HasTextureFor("FACE") {
-			self.fpoint_info = [4]int{(3 + 1 + 0), 0, 3, 0} // size, xyz_offset, uv_offset, normal_offset
-			self.data_buffer_fpoints = make([]float32, self.fpoint_vert_total*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 0), 3, 1, 0} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, self.fpoint_vert_total*self.dbuffer_fpoint_info[0])
 			for fidx, face_vlist := range self.faces {
 				for i := 0; i < len(face_vlist); i++ {
 					new_vidx, vidx := self.get_fpoint_new_vidx(fidx, i), int(face_vlist[i])
-					self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, new_vidx, vidx)
-					self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, new_vidx, fidx, i*2)
+					self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, vidx)
+					self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, new_vidx, fidx, i*2)
 				}
 			}
 		} else if !self.HasNormalFor("") && self.HasTextureFor("VERTEX") {
-			self.fpoint_info = [4]int{(3 + 1 + 0), 0, 3, 0} // size, xyz_offset, uv_offset, normal_offset
-			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 1 + 0), 3, 1, 0} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, len(self.verts)*self.dbuffer_fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
-				self.buffer_copy_tuv(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx, 0)
+				self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
+				self.buffer_copy_tuv(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx, 0)
 			}
-			self.data_buffer_vpoints = self.data_buffer_fpoints
-			self.vpoint_info = self.fpoint_info
+			self.dbuffer_vpoint = self.dbuffer_fpoint
+			self.dbuffer_vpoint_info = self.dbuffer_fpoint_info
 		} else if !self.HasNormalFor("") && !self.HasTextureFor("") {
-			self.fpoint_info = [4]int{(3 + 0 + 0), 0, 0, 0} // size, xyz_offset, uv_offset, normal_offset
-			self.data_buffer_fpoints = make([]float32, len(self.verts)*self.fpoint_info[0])
+			self.dbuffer_fpoint_info = [4]int{(3 + 0 + 0), 3, 0, 0} // size, xyz_size, uv_size, normal_size
+			self.dbuffer_fpoint = make([]float32, len(self.verts)*self.dbuffer_fpoint_info[0])
 			for vidx := 0; vidx < len(self.verts); vidx++ {
-				self.buffer_copy_xyz(self.data_buffer_fpoints, self.fpoint_info, vidx, vidx)
+				self.buffer_copy_xyz(self.dbuffer_fpoint, self.dbuffer_fpoint_info, vidx, vidx)
 			}
-			self.data_buffer_vpoints = self.data_buffer_fpoints
-			self.vpoint_info = self.fpoint_info
+			self.dbuffer_vpoint = self.dbuffer_fpoint
+			self.dbuffer_vpoint_info = self.dbuffer_fpoint_info
 		}
 	} else {
-		self.data_buffer_fpoints = nil
+		self.dbuffer_fpoint = nil
 	}
-	if (for_points || for_lines) && self.data_buffer_vpoints == nil {
-		self.vpoint_info = [4]int{3, 0, 0, 0}
-		self.data_buffer_vpoints = make([]float32, len(self.verts)*self.vpoint_info[0])
+	if (for_points || for_lines) && self.dbuffer_vpoint == nil {
+		self.dbuffer_vpoint_info = [4]int{3, 3, 0, 0}
+		self.dbuffer_vpoint = make([]float32, len(self.verts)*self.dbuffer_vpoint_info[0])
 		for vidx := 0; vidx < len(self.verts); vidx++ {
-			self.buffer_copy_xyz(self.data_buffer_vpoints, self.vpoint_info, vidx, vidx)
+			self.buffer_copy_xyz(self.dbuffer_vpoint, self.dbuffer_vpoint_info, vidx, vidx)
 		}
 	}
 	// create data buffer for edge lines
@@ -553,17 +530,17 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		for _, edge := range self.edges {
 			segment_count += len(edge) - 1
 		}
-		self.data_buffer_lines = make([]uint32, segment_count*2)
+		self.dbuffer_line = make([]uint32, segment_count*2)
 		epos := 0
 		for _, edge := range self.edges {
 			for i := 1; i < len(edge); i++ {
-				self.data_buffer_lines[epos+0] = edge[i-1]
-				self.data_buffer_lines[epos+1] = edge[i]
+				self.dbuffer_line[epos+0] = edge[i-1]
+				self.dbuffer_line[epos+1] = edge[i]
 				epos += 2
 			}
 		}
 	} else {
-		self.data_buffer_lines = nil
+		self.dbuffer_line = nil
 	}
 	// create data buffer for faces
 	if for_faces {
@@ -579,7 +556,7 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 			}
 			return 0
 		}
-		self.data_buffer_faces = make([]uint32, triangle_count*3)
+		self.dbuffer_face = make([]uint32, triangle_count*3)
 		tpos := 0
 		for fidx, face := range self.faces { // []vidx
 			nv := self.GetFaceNormal(fidx)
@@ -587,96 +564,98 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 			for _, triangle := range triangles {          // [3]vidx
 				if points_per_face { // vertex index has been changed due to PER_FACE duplication
 					vidx_stt := self.get_fpoint_new_vidx(fidx, 0)
-					self.data_buffer_faces[tpos+0] = uint32(vidx_stt + find_index_in_face(triangle[0], face))
-					self.data_buffer_faces[tpos+1] = uint32(vidx_stt + find_index_in_face(triangle[1], face))
-					self.data_buffer_faces[tpos+2] = uint32(vidx_stt + find_index_in_face(triangle[2], face))
+					self.dbuffer_face[tpos+0] = uint32(vidx_stt + find_index_in_face(triangle[0], face))
+					self.dbuffer_face[tpos+1] = uint32(vidx_stt + find_index_in_face(triangle[1], face))
+					self.dbuffer_face[tpos+2] = uint32(vidx_stt + find_index_in_face(triangle[2], face))
 				} else { // vertex index was preserved
-					self.data_buffer_faces[tpos+0] = triangle[0]
-					self.data_buffer_faces[tpos+1] = triangle[1]
-					self.data_buffer_faces[tpos+2] = triangle[2]
+					self.dbuffer_face[tpos+0] = triangle[0]
+					self.dbuffer_face[tpos+1] = triangle[1]
+					self.dbuffer_face[tpos+2] = triangle[2]
 				}
 				tpos += 3
 			}
 		}
 	} else {
-		self.data_buffer_faces = nil
+		self.dbuffer_face = nil
 	}
 	self.Clear(false, false, true)
 }
 
 func (self *Geometry) BuildDataBuffersForWireframe() {
-	if self.data_buffer_vpoints == nil {
+	if self.dbuffer_vpoint == nil {
 		// create data buffer for vertex points, only if necessary
-		self.data_buffer_vpoints = make([]float32, len(self.verts)*3)
+		self.dbuffer_vpoint = make([]float32, len(self.verts)*3)
 		vpos := 0
 		for _, xyz := range self.verts {
-			self.data_buffer_vpoints[vpos+0] = xyz[0]
-			self.data_buffer_vpoints[vpos+1] = xyz[1]
-			self.data_buffer_vpoints[vpos+2] = xyz[2]
+			self.dbuffer_vpoint[vpos+0] = xyz[0]
+			self.dbuffer_vpoint[vpos+1] = xyz[1]
+			self.dbuffer_vpoint[vpos+2] = xyz[2]
 			vpos += 3
 		}
-		self.vpoint_info = [4]int{3, 0, 0, 0}
+		self.dbuffer_vpoint_info = [4]int{3, 3, 0, 0}
 	}
 	// create data buffer for edges, by extracting wireframe from faces
-	self.data_buffer_lines = make([]uint32, 0)
+	self.dbuffer_line = make([]uint32, 0)
 	for fidx, face := range self.faces {
 		normal := self.GetFaceNormal(fidx)
 		triangles := self.get_triangulation(face, normal)
 		for _, t := range triangles {
-			self.data_buffer_lines = append(self.data_buffer_lines, t[0], t[1], t[1], t[2], t[2], t[0])
+			self.dbuffer_line = append(self.dbuffer_line, t[0], t[1], t[1], t[2], t[2], t[0])
 		}
 	}
 	self.Clear(false, false, true)
 }
 
 // ----------------------------------------------------------------------------
-// Build WebGL Buffers
+// Get Data Buffer (GLGeometry Interface)
 // ----------------------------------------------------------------------------
 
-func (self *Geometry) IsWebGLBufferReady() bool {
-	return self.rcbuffer_vpoints != nil
+func (self *Geometry) IsDataBufferReady() bool {
+	return len(self.dbuffer_vpoint) > 0 || len(self.dbuffer_fpoint) > 0
 }
 
-func (self *Geometry) BuildWebGLBuffers(rc gigl.GLRenderingContext, for_points bool, for_lines bool, for_faces bool) {
-	c := rc.GetConstants()
-	if for_points {
-		self.rcbuffer_vpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_vpoints)
+func (self *Geometry) IsVtxBufferRebuiltForFaces() bool {
+	return self.dbuffer_fpoint != nil
+}
+
+func (self *Geometry) GetVtxBuffer(draw_mode int) []float32 {
+	if draw_mode == 3 && self.dbuffer_fpoint != nil {
+		return self.dbuffer_fpoint // use extra vertex buffer (built for FACE drawing)
 	} else {
-		self.rcbuffer_vpoints = nil
-	}
-	if for_lines {
-		self.rcbuffer_lines = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_lines)
-	} else {
-		self.rcbuffer_lines = nil
-	}
-	if for_faces && self.data_buffer_faces != nil {
-		if self.data_buffer_fpoints != nil {
-			self.rcbuffer_fpoints = rc.CreateDataBuffer(c.ARRAY_BUFFER, self.data_buffer_fpoints)
-		}
-		self.rcbuffer_faces = rc.CreateDataBuffer(c.ELEMENT_ARRAY_BUFFER, self.data_buffer_faces)
-	} else {
-		self.rcbuffer_faces = nil
+		return self.dbuffer_vpoint // use original vertex buffer
 	}
 }
 
-func (self *Geometry) GetWebGLBuffer(draw_mode int) (interface{}, int, [4]int) {
+func (self *Geometry) GetVtxBufferInfo(draw_mode int) [5]int {
+	if draw_mode == 3 && self.dbuffer_fpoint != nil {
+		pinfo := self.dbuffer_fpoint_info // use extra vertex buffer (built for FACE drawing)s
+		return [5]int{(len(self.dbuffer_fpoint) / pinfo[0]), pinfo[0], pinfo[1], pinfo[2], pinfo[3]}
+	} else {
+		pinfo := self.dbuffer_vpoint_info // use original vertex buffer
+		return [5]int{(len(self.dbuffer_vpoint) / pinfo[0]), pinfo[0], pinfo[1], pinfo[2], pinfo[3]}
+	}
+}
+
+func (self *Geometry) GetIdxBuffer(draw_mode int) []uint32 {
 	switch draw_mode {
-	case 1: // "POINTS", "VERTICES":
-		if self.data_buffer_fpoints == nil {
-			return self.rcbuffer_vpoints, len(self.data_buffer_vpoints), self.vpoint_info
-		} else {
-			return self.rcbuffer_fpoints, len(self.data_buffer_fpoints), self.fpoint_info
-		}
-	case 2: // "LINES", "EDGES":
-		return self.rcbuffer_lines, len(self.data_buffer_lines), self.vpoint_info
-	case 3: // "TRIANGLES", "FACES":
-		if self.data_buffer_fpoints == nil {
-			return self.rcbuffer_faces, len(self.data_buffer_faces), self.vpoint_info
-		} else {
-			return self.rcbuffer_faces, len(self.data_buffer_faces), self.fpoint_info
-		}
+	case 2:
+		return self.dbuffer_line
+	case 3:
+		return self.dbuffer_face
 	default:
-		fmt.Printf("Invalid mode '%d' for GetWebGLBuffer()\n", draw_mode)
-		return nil, 0, [4]int{0, 0, 0, 0}
+		fmt.Printf("ERROR: invalid 'draw_mode' (%d) in geom.GetIdxBuffer()\n", draw_mode)
+		return nil
+	}
+}
+
+func (self *Geometry) GetIdxBufferCount(draw_mode int) int {
+	switch draw_mode {
+	case 2:
+		return len(self.dbuffer_line)
+	case 3:
+		return len(self.dbuffer_face)
+	default:
+		fmt.Printf("ERROR: invalid 'draw_mode' (%d) in geom.GetIdxBufferCount()\n", draw_mode)
+		return 0 // n
 	}
 }

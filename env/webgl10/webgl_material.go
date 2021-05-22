@@ -1,4 +1,4 @@
-package webgl1
+package webgl10
 
 import (
 	"bytes"
@@ -26,7 +26,9 @@ type WebGLMaterial struct {
 	texture_loading bool                   // true, only if texture is being loaded
 }
 
-func NewWebGLMaterial(rc *WebGLRenderingContext, source string, options ...interface{}) (*WebGLMaterial, error) {
+func new_webgl_material(rc *WebGLRenderingContext, source string, options ...interface{}) (*WebGLMaterial, error) {
+	// THIS CONSTRUCTOR FUNCTION IS NOT MEANT TO BE CALLED DIRECTLY BY USER.
+	// IT SHOULD BE CALLED BY 'WebGLRenderingContext.CreateMaterial()'.
 	// 'source' : "#ffffff"
 	// 			: "texturepath"
 	//			: "GLOW"
@@ -110,6 +112,8 @@ func (self *WebGLMaterial) IsTextureReady() bool {
 }
 
 func (self *WebGLMaterial) IsTextureLoading() bool {
+	// It may take a long time to load the texture image (ONLY IF it's done asynchronously).
+	// That why we have this function defined in GLMaterial interface.
 	return self.texture_loading
 }
 
@@ -119,11 +123,15 @@ func (self *WebGLMaterial) IsTextureLoading() bool {
 
 func (self *WebGLMaterial) LoadTexture(path string) *WebGLMaterial {
 	// Load texture image from server path, for example "/assets/world.jpg"
-	rc, c := self.rc, self.rc.GetConstants()
+	context, c := self.rc.context, self.rc.GetConstants()
 	if self.texture == nil { // initialize it with a single CYAN pixel
-		self.texture = rc.GLCreateTexture()
-		rc.GLBindTexture(c.TEXTURE_2D, self.texture)
-		rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, []uint8{0, 255, 255, 255})
+		self.texture = context.Call("createTexture")
+		// js_texture_unit := js.ValueOf(js.ValueOf(self.constants.TEXTURE0 + uint32(texture_unit)))
+		context.Call("activeTexture", js.ValueOf(c.TEXTURE0))
+		context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), self.texture)
+		// context.TexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, []uint8{0, 255, 255, 255})
+		js_buffer := self.rc.ConvertGoSliceToJsTypedArray([]uint8{0, 255, 255, 255})
+		context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), 1, 1, 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
 		self.texture_wh = [2]int{1, 1}
 	}
 	self.texture_loading = true
@@ -166,7 +174,7 @@ func (self *WebGLMaterial) LoadTexture(path string) *WebGLMaterial {
 						pixbuf = img.(*image.RGBA).Pix
 					case *image.NRGBA: // non-alpha-premultiplied 32-bit R/G/B/A color
 						pixbuf = img.(*image.NRGBA).Pix
-					default: // we need conversion, otherwise
+					default: // unfortunately, we have to convert pixel format
 						pixbuf = make([]uint8, size.X*size.Y*4)
 						for y := 0; y < size.Y; y++ {
 							y_idx := y * size.X * 4
@@ -177,15 +185,19 @@ func (self *WebGLMaterial) LoadTexture(path string) *WebGLMaterial {
 							}
 						}
 					}
-					rc.GLBindTexture(c.TEXTURE_2D, self.texture)
-					rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, size.X, size.Y, 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
+					texture := context.Call("createTexture")
+					context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), texture)
+					// rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, size.X, size.Y, 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
+					js_buffer := self.rc.ConvertGoSliceToJsTypedArray(pixbuf)
+					context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), size.X, size.Y, 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
 					if size.X&(size.X-1) == 0 && size.Y&(size.Y-1) == 0 { // POWER-OF-2 width & height
-						rc.GLGenerateMipmap(c.TEXTURE_2D)
+						context.Call("generateMipmap", js.ValueOf(c.TEXTURE_2D))
 					} else { // NON-POWER-OF-2 textures : CLAMP_TO_EDGE & NEAREST/LINEAR only
-						rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_S, c.CLAMP_TO_EDGE)
-						rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_T, c.CLAMP_TO_EDGE)
-						rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_MIN_FILTER, c.LINEAR)
+						context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_S), js.ValueOf(c.CLAMP_TO_EDGE))
+						context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_T), js.ValueOf(c.CLAMP_TO_EDGE))
+						context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_MIN_FILTER), js.ValueOf(c.LINEAR))
 					}
+					self.texture = texture
 					self.texture_wh = [2]int{size.X, size.Y}
 					// log.Printf("Texture ready for WebGL\n")
 				}
@@ -228,13 +240,15 @@ func (self *WebGLMaterial) InitializeGlowTexture(color string) {
 			set_pixbuf_with_rgba(pixbuf, (width+u)*4, uint8(ii*rgba[0]*255), uint8(ii*rgba[1]*255), uint8(ii*rgba[2]*255), uint8(ii*255))
 		}
 	}
-	c := self.rc.GetConstants()
-	self.texture = self.rc.GLCreateTexture()
-	self.rc.GLBindTexture(c.TEXTURE_2D, self.texture)
-	self.rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, width, height, 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_S, c.CLAMP_TO_EDGE)
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_T, c.CLAMP_TO_EDGE)
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_MIN_FILTER, c.NEAREST)
+	context, c := self.rc.context, self.rc.GetConstants()
+	self.texture = context.Call("createTexture")
+	context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), self.texture)
+	// self.rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, width, height, 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
+	js_buffer := self.rc.ConvertGoSliceToJsTypedArray(pixbuf)
+	context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), width, height, 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_S), js.ValueOf(c.CLAMP_TO_EDGE))
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_T), js.ValueOf(c.CLAMP_TO_EDGE))
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_MIN_FILTER), js.ValueOf(c.LINEAR))
 	self.texture_wh = [2]int{width, height} // CLAMP_TO_EDGE & NEAREST(not LINEAR) for NON-POWER-OF-2 textures
 }
 
@@ -269,13 +283,14 @@ func (self *WebGLMaterial) InitializeAlphabetTexture(color string, fontsize int,
 	}
 	txtctx.Set("fillStyle", color)                  // interior (Note that WHITE can be multiplied with other colors later)
 	txtctx.Call("fillText", _ALPHABET_STRING, 0, 0) // draw the alphabet string
-	c := self.rc.GetConstants()
-	self.texture = self.rc.GLCreateTexture()
-	self.rc.GLBindTexture(c.TEXTURE_2D, self.texture)
-	self.rc.GLTexImage2DFromImgObject(c.TEXTURE_2D, 0, c.RGBA, c.RGBA, c.UNSIGNED_BYTE, txtctx.Get("canvas"))
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_S, c.CLAMP_TO_EDGE)
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_WRAP_T, c.CLAMP_TO_EDGE)
-	self.rc.GLTexParameteri(c.TEXTURE_2D, c.TEXTURE_MIN_FILTER, c.LINEAR)
+	context, c := self.rc.context, self.rc.GetConstants()
+	self.texture = context.Call("createTexture")
+	context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), self.texture)
+	// self.rc.GLTexImage2DFromImgObject(c.TEXTURE_2D, 0, c.RGBA, c.RGBA, c.UNSIGNED_BYTE, txtctx.Get("canvas"))
+	context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), txtctx.Get("canvas"))
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_S), js.ValueOf(c.CLAMP_TO_EDGE))
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_T), js.ValueOf(c.CLAMP_TO_EDGE))
+	context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_MIN_FILTER), js.ValueOf(c.LINEAR))
 	self.texture_wh = [2]int{twidth, theight}
 	self.alphabet_cwh = [2]float32{cwidth, cheight}
 }

@@ -1,4 +1,4 @@
-package webgl1
+package webgl10
 
 import (
 	"errors"
@@ -16,12 +16,16 @@ type WebGLCanvas struct {
 	rc     *WebGLRenderingContext //
 
 	mouse_event_common_handler js.Func //
+	mouse_wheel_common_handler js.Func //
 	mouse_dragging             bool
 	mouse_sxy                  [2]int
+	mouse_wheel_scale          float64 // in the range of [0 ~ 500(default) ~ 1000]
 	evthandler_for_click       func(canvasxy [2]int, keystat [4]bool)
 	evthandler_for_dblclick    func(canvasxy [2]int, keystat [4]bool)
 	evthandler_for_mouse_over  func(canvasxy [2]int, keystat [4]bool)
 	evthandler_for_mouse_drag  func(canvasxy [2]int, dxy [2]int, keystat [4]bool)
+	evthandler_for_zoom        func(canvasxy [2]int, scale float32, keystat [4]bool)
+	evthandler_for_scroll      func(canvasxy [2]int, dx int, dy int, keystat [4]bool)
 	wasm_handler_for_draw      js.Func
 	user_handler_for_draw      func(now float64)
 }
@@ -48,6 +52,7 @@ func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
 	self.canvas.Set("height", self.wh[1]) // IMPORTANT!
 	// context.Call("viewport", 0, 0, camera.wh[0], camera.wh[1]) // (LowerLeft.x, LowerLeft.y, width, height)
 	// (if 'viewport' is not updated, rendering may blur after window.resize)
+	self.mouse_wheel_scale = 500 // in the range of [0 ~ 500(default) ~ 1000]
 	// create WebGL context
 	self.rc, err = NewWebGLRenderingContext(self.canvas)
 	if err != nil {
@@ -55,10 +60,6 @@ func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
 		return nil, err
 	}
 	return &self, nil
-}
-
-func (self *WebGLCanvas) GetWebGLRenderingContext() *WebGLRenderingContext {
-	return self.rc
 }
 
 func (self *WebGLCanvas) GetGLRenderingContext() gigl.GLRenderingContext {
@@ -69,12 +70,20 @@ func (self *WebGLCanvas) String() string {
 	return fmt.Sprintf("WebGLCanvas{id:'%s' size:%dx%d}\n", self.id, self.wh[0], self.wh[1])
 }
 
+func (self *WebGLCanvas) RcGetWebGLRenderingContext() js.Value {
+	return self.rc.context
+}
+
+func (self *WebGLCanvas) RcConvertGoSliceToJsTypedArray(a interface{}) js.Value {
+	return self.rc.ConvertGoSliceToJsTypedArray(a)
+}
+
 // ----------------------------------------------------------------------------
 // User Interactions (Event Handling)
 // ----------------------------------------------------------------------------
 
 func (self *WebGLCanvas) setup_mouse_event_common_handler() {
-	mouse_event_common_handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	self.mouse_event_common_handler = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		if len(args) != 1 {
 			fmt.Println("Invalid GoCallback call (for EventHandling) from Javascript")
 			return nil
@@ -130,12 +139,12 @@ func (self *WebGLCanvas) setup_mouse_event_common_handler() {
 		}
 		return nil
 	})
-	self.canvas.Call("addEventListener", "click", mouse_event_common_handler)
-	self.canvas.Call("addEventListener", "dblclick", mouse_event_common_handler)
-	self.canvas.Call("addEventListener", "mousemove", mouse_event_common_handler)
-	self.canvas.Call("addEventListener", "mousedown", mouse_event_common_handler)
-	self.canvas.Call("addEventListener", "mouseup", mouse_event_common_handler)
-	self.canvas.Call("addEventListener", "mouseleave", mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "click", self.mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "dblclick", self.mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "mousemove", self.mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "mousedown", self.mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "mouseup", self.mouse_event_common_handler)
+	self.canvas.Call("addEventListener", "mouseleave", self.mouse_event_common_handler)
 }
 
 func (self *WebGLCanvas) SetEventHandlerForClick(handler func(canvasxy [2]int, keystat [4]bool)) {
@@ -161,33 +170,52 @@ func (self *WebGLCanvas) SetEventHandlerForMouseOver(handler func(canvasxy [2]in
 
 func (self *WebGLCanvas) SetEventHandlerForMouseDrag(handler func(canvasxy [2]int, dxy [2]int, keystat [4]bool)) {
 	self.evthandler_for_mouse_drag = handler
-	if self.mouse_event_common_handler.IsNull() {
+	if self.mouse_event_common_handler.IsUndefined() {
 		self.setup_mouse_event_common_handler()
 	}
 }
 
-func (self *WebGLCanvas) SetEventHandlerForMouseWheel(handler func(canvasxy [2]int, scale float32, keystat [4]bool)) {
+func (self *WebGLCanvas) setup_mouse_wheel_common_handler() {
+	// For zooming,   'handler()' is given 2nd argument of 'scale' in the range of [ 0.01 ~ 1(default) ~ 100.0 ]
+	// For scrolling, 'handler()' is given 2nd argument of 'delta' in the range of [ -200 ~ 0 ~ +200 ]
 	js_handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		event := args[0] // js.Value (event object), event.Get("type"), event.Get("srcElement")
-		if handler != nil {
-			var mouse_wheel_scale float64 = 500 // in the range of [0 ~ 500(default) ~ 1000]
-			keystat := [4]bool{event.Get("altKey").Bool(), event.Get("ctrlKey").Bool(), event.Get("metaKey").Bool(), event.Get("shiftKey").Bool()}
-			if keystat[3] { // ZOOM, if SHIFT is was pressed
+		keystat := [4]bool{event.Get("altKey").Bool(), event.Get("ctrlKey").Bool(), event.Get("metaKey").Bool(), event.Get("shiftKey").Bool()}
+		if keystat[3] { // ZOOM, if SHIFT is was pressed
+			if self.evthandler_for_zoom != nil {
 				cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
-				mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
-				mouse_wheel_scale = float64(math.Max(0, math.Min(mouse_wheel_scale, 1000)))
-				scale_exp := (mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
-				scale := math.Pow(10, scale_exp)                 // [ 0.01 ~ 1(default) ~ 100.0 ]
-				handler(cxy, float32(scale), keystat)
-			} else { // SCROLL
+				self.mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
+				self.mouse_wheel_scale = float64(math.Max(0, math.Min(self.mouse_wheel_scale, 1000)))
+				scale_exp := (self.mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
+				scale := math.Pow(10, scale_exp)                      // [ 0.01 ~ 1(default) ~ 100.0 ]
+				self.evthandler_for_zoom(cxy, float32(scale), keystat)
+			}
+		} else { // SCROLL
+			if self.evthandler_for_scroll != nil {
 				cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
-				delta := float32(event.Get("deltaY").Int())
-				handler(cxy, delta, keystat)
+				dx, dy := event.Get("deltaX").Int(), event.Get("deltaY").Int()
+				self.evthandler_for_scroll(cxy, dx, dy, keystat)
 			}
 		}
 		return nil
 	})
 	self.canvas.Call("addEventListener", "wheel", js_handler)
+}
+
+func (self *WebGLCanvas) SetEventHandlerForZoom(handler func(canvasxy [2]int, scale float32, keystat [4]bool)) {
+	// 'scale' in the range of [ 0.01 ~ 1(default) ~ 100.0 ]
+	self.evthandler_for_zoom = handler
+	if self.mouse_wheel_common_handler.IsUndefined() {
+		self.setup_mouse_wheel_common_handler()
+	}
+}
+
+func (self *WebGLCanvas) SetEventHandlerForScroll(handler func(canvasxy [2]int, dx int, dy int, keystat [4]bool)) {
+	// 'scroll' in the range of [ -200 ~ 0 ~ +200 ] 	// (-): swipe_down, (+): swipe_up
+	self.evthandler_for_scroll = handler
+	if self.mouse_wheel_common_handler.IsUndefined() {
+		self.setup_mouse_wheel_common_handler()
+	}
 }
 
 func (self *WebGLCanvas) SetEventHandlerForKeyPress(handler func(key string, code string, keystat [4]bool)) {
@@ -218,26 +246,46 @@ func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h in
 }
 
 // ----------------------------------------------------------------------------
-// Animation Frame
+// Animating with DrawHandler
 // ----------------------------------------------------------------------------
 
-func (self *WebGLCanvas) SetDrawHandlerForAnimationFrame(draw_handler func(now float64)) {
-	self.user_handler_for_draw = draw_handler
-	self.wasm_handler_for_draw = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		if self.user_handler_for_draw != nil {
-			now := args[0].Float() // DOMHighResTimeStamp similar to performance.now()
-			self.user_handler_for_draw(now)
-		}
+func (self *WebGLCanvas) Run(draw_handler func(now float64)) {
+	// run UI animation loop forever, with the given 'draw_handler'
+	if draw_handler != nil {
+		self.user_handler_for_draw = draw_handler
+		self.wasm_handler_for_draw = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+			if self.user_handler_for_draw != nil {
+				now := args[0].Float() // DOMHighResTimeStamp similar to performance.now()
+				self.user_handler_for_draw(now)
+			}
+			js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
+			return nil
+		})
 		js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
-		return nil
-	})
-	js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
-	// What it actually does is like:
-	//   requestAnimationFrame(drawHandlerForAnimationFrame);
-	//   function drawHandlerForAnimationFrame() {
-	//     if draw_handler != nil {
-	//         draw_handler();   // draw the scene by calling Go renderer function
-	//     }
-	//     requestAnimationFrame(drawHandlerForAnimationFrame); // call itself again for the next frame
-	//   }
+		// What it actually does is like:
+		//   requestAnimationFrame(drawHandlerForAnimationFrame);
+		//   function drawHandlerForAnimationFrame() {
+		//     if draw_handler != nil {
+		//         draw_handler();   // draw the scene by calling Go renderer function
+		//     }
+		//     requestAnimationFrame(drawHandlerForAnimationFrame); // call itself again for the next frame
+		//   }
+	}
+	<-make(chan bool) // wait for events (without exiting)
+}
+
+func (self *WebGLCanvas) RunOnce(draw_handler func(now float64)) {
+	// run UI animation loop only once, with the given 'draw_handler'
+	if draw_handler != nil {
+		self.user_handler_for_draw = draw_handler
+		self.wasm_handler_for_draw = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+			if self.user_handler_for_draw != nil {
+				now := args[0].Float() // DOMHighResTimeStamp similar to performance.now()
+				self.user_handler_for_draw(now)
+			}
+			return nil
+		})
+		js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
+	}
+	<-make(chan bool) // wait for events (without exiting)
 }

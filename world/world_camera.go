@@ -1,4 +1,4 @@
-package globe
+package world
 
 import (
 	"math"
@@ -8,19 +8,22 @@ import (
 )
 
 type WorldCamera struct {
-	gcam *g3d.Camera // Perspective Globe Camera
+	camera *g3d.Camera // Perspective Globe Camera
 	// TODO: Add support for Orthographic projection camera
 	// TODO: Add more cameras for flat world map projections
 }
 
 func NewWorldCamera(wh [2]int, fov float32, zoom float32) *WorldCamera {
-	camera := g3d.NewPerspectiveCamera(wh, fov, zoom) // AspectRatio, FieldOfView, ZoomLevel
-	self := WorldCamera{gcam: camera}
+	cam_ip := g3d.CamInternalParams{WH: wh, Fov: fov, Zoom: zoom, NearFar: [2]float32{1, 100}}
+	cam_ep := g3d.CamExternalPose{From: [3]float32{10, 0, 0}, At: [3]float32{0, 0, 0}, Up: [3]float32{0, 0, 1}}
+	perspective := true
+	camera := g3d.NewCamera(perspective, &cam_ip, &cam_ep)
+	self := WorldCamera{camera: camera}
 	return &self
 }
 
 func (self *WorldCamera) ShowInfo() {
-	self.gcam.ShowInfo()
+	self.camera.ShowInfo()
 }
 
 // ----------------------------------------------------------------------------
@@ -28,12 +31,12 @@ func (self *WorldCamera) ShowInfo() {
 // ----------------------------------------------------------------------------
 
 func (self *WorldCamera) SetAspectRatio(width int, height int) *WorldCamera {
-	self.gcam.SetAspectRatio(width, height)
+	self.camera.SetAspectRatio(width, height)
 	return self
 }
 
 func (self *WorldCamera) SetZoom(zoom float32) *WorldCamera {
-	self.gcam.SetZoom(zoom)
+	self.camera.SetZoom(zoom)
 	return self
 }
 
@@ -48,22 +51,22 @@ func (self *WorldCamera) SetPoseByLonLat(lon float32, lat float32, dist float32)
 	camX := [3]float32{-sinlon, +coslon, 0}              // this prevents UP vector singularity at poles
 	camZ := c3d.Normalize(Twc)                           // camera's Z axis points backward (away from view frustum)
 	camY := c3d.CrossAB(camZ, camX)
-	self.gcam.SetPoseWithCameraAxes(camX, camY, camZ, Twc)
+	self.camera.SetPoseWithCameraAxes(camX, camY, camZ, Twc)
 	return self
 }
 
 func (self *WorldCamera) RotateAroundGlobe(horizontal_angle float32, vertical_angle float32) *WorldCamera {
-	self.gcam.RotateAroundPoint(10, horizontal_angle, vertical_angle)
+	self.camera.RotateAroundPoint(10, horizontal_angle, vertical_angle)
 	self.RotateByRollToHeadUpNorth()
 	return self
 }
 
 func (self *WorldCamera) RotateByRollToHeadUpNorth() *WorldCamera {
-	e := self.gcam.GetViewMatrix().GetElements()
+	e := self.camera.GetViewMatrix().GetElements()
 	// Note that {e[8],e[9]} is the NORTH (0,0,1) projected onto XY plane of Camera axes in WORLD space.
 	if e[8]*e[8]+e[9]*e[9] > 0.01 { // Now compare {e[8],e[9]} with Y direction (90°) in CAMERA space.
 		roll := 90 - float32(math.Atan2(float64(e[9]), float64(e[8])))*InDegree
-		self.gcam.RotateByRoll(roll)
+		self.camera.RotateByRoll(roll)
 	}
 	return self
 }

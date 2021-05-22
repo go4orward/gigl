@@ -2,22 +2,32 @@ package g3d
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
 )
 
+// ----------------------------------------------------------------------------
+// SceneObject
+// ----------------------------------------------------------------------------
+
 type SceneObject struct {
-	Geometry    gigl.GLGeometry   // geometry interface
-	Material    gigl.GLMaterial   // material
-	VShader     gigl.GLShader     // vert shader and its bindings
-	EShader     gigl.GLShader     // edge shader and its bindings
-	FShader     gigl.GLShader     // face shader and its bindings
-	modelmatrix common.Matrix4    //
-	UseDepth    bool              // depth test flag (default is true)
-	UseBlend    bool              // blending flag with alpha (default is false)
-	poses       *SceneObjectPoses // poses for multiple instances of this (geometry+material) object
-	children    []*SceneObject    //
+	Geometry    gigl.GLGeometry // geometry interface
+	Material    gigl.GLMaterial // material
+	VShader     gigl.GLShader   // vert shader and its bindings
+	EShader     gigl.GLShader   // edge shader and its bindings
+	FShader     gigl.GLShader   // face shader and its bindings
+	modelmatrix common.Matrix4  //
+	UseDepth    bool            // depth test flag (default is true)
+	UseBlend    bool            // blending flag with alpha (default is false)
+	children    []*SceneObject  //
+	// multiple instance poses
+	instance_count  int       // number of instances
+	instance_stride int       // number of values of a single pose
+	instance_buffer []float32 //
+	// VAO (set of RenderingContext buffers)
+	vao *gigl.VAO //
 }
 
 func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
@@ -36,7 +46,6 @@ func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
 	sobj.modelmatrix.SetIdentity()
 	sobj.UseDepth = true  // depth test is turned on by default
 	sobj.UseBlend = false // alpha blending is turned off by default
-	sobj.poses = nil
 	sobj.children = nil
 	return &sobj
 }
@@ -44,9 +53,8 @@ func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
 func (self *SceneObject) ShowInfo() {
 	fmt.Printf("SceneObject ")
 	self.Geometry.ShowInfo()
-	if self.poses != nil {
-		fmt.Printf("  ")
-		self.poses.ShowInfo()
+	if self.instance_buffer != nil {
+		fmt.Printf("  Instancess : count=%d stride=%d\n", self.instance_count, self.instance_stride)
 	}
 	if self.Material != nil {
 		fmt.Printf("  ")
@@ -92,22 +100,46 @@ func (self *SceneObject) GetChildren() []*SceneObject {
 // Multiple Instance Poses
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) SetPoses(poses *SceneObjectPoses) *SceneObject {
+func (self *SceneObject) ClearInstanceBuffer() {
+	self.instance_buffer = nil
+	self.instance_count = 0
+	self.instance_stride = 0
+}
+
+func (self *SceneObject) SetInstanceBuffer(instance_count int, instance_stride int, data []float32) *SceneObject {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses = poses
+	self.instance_buffer = make([]float32, instance_count*instance_stride)
+	self.instance_count = instance_count
+	self.instance_stride = instance_stride
+	if data != nil {
+		for i := 0; i < len(self.instance_buffer) && i < len(data); i++ {
+			self.instance_buffer[i] = data[i]
+		}
+	}
 	return self
 }
 
-func (self *SceneObject) SetupPoses(size int, count int, data []float32) *SceneObject {
+func (self *SceneObject) SetInstancePoseValues(instance_index int, offset int, values ...float32) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses = NewSceneObjectPoses(size, count, data)
-	return self
+	if (offset + len(values)) > self.instance_stride {
+		fmt.Printf("WARNING: SetInstancePoseValues() failed : invalid offset (%d) and value count (%d) for the stride (%d)\n", offset, len(values), self.instance_stride)
+		return
+	}
+	pos := instance_index * self.instance_stride
+	for i := 0; i < len(values); i++ {
+		self.instance_buffer[pos+offset+i] = values[i]
+	}
 }
 
-func (self *SceneObject) SetPoseValues(index int, offset int, values ...float32) *SceneObject {
+func (self *SceneObject) SetInstanceColorValues(instance_index int, offset int, v0 uint8, v1 uint8, v2 uint8, v3 uint8) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
-	self.poses.SetPose(index, offset, values...)
-	return self
+	if (offset + 1) > self.instance_stride {
+		fmt.Printf("WARNING: SetInstanceColorValue() failed : invalid offset (%d) for the stride (%d)\n", offset, self.instance_stride)
+		return
+	}
+	pos := instance_index * self.instance_stride
+	b0, b1, b2, b3 := uint32(0), uint32(0), uint32(0), uint32(0)
+	self.instance_buffer[pos+offset] = math.Float32frombits(b0 + b1<<8 + b2<<16 + b3<<24) // LittleEndian (lower byte comes first)
 }
 
 // ----------------------------------------------------------------------------

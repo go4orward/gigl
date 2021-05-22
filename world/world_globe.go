@@ -1,4 +1,4 @@
-package globe
+package world
 
 import (
 	"math"
@@ -9,37 +9,64 @@ import (
 	"github.com/go4orward/gigl/g3d/c3d"
 )
 
-type Globe struct {
+type WorldGlobe struct {
 	bkgcolor    [3]float32       // background color of the globe
 	GSphere     *g3d.SceneObject // globe sphere with texture & vertex normals
 	GlowRing    *g3d.SceneObject // glow ring around the globe
 	modelmatrix common.Matrix4   // Model matrix of the globe & its layers
 }
 
-func NewGlobe(rc gigl.GLRenderingContext, bkg_color string) *Globe {
-	self := Globe{}
+func NewWorldGlobe(rc gigl.GLRenderingContext, bkg_color string, world_img_filepath string) *WorldGlobe {
+	self := WorldGlobe{}
 	self.SetBkgColor(bkg_color)
-	self.GSphere = NewSceneObject_Globe(rc)     // globe sphere with texture & vertex normals
-	self.GlowRing = NewSceneObject_GlowRing(rc) // glow ring around the globe
-	self.modelmatrix.SetIdentity()              // initialize as Identity matrix
+	// Globe
+	if true { // with texture AND normal vectors (for directional lighting)
+		use_vertex_normal := true
+		geometry := build_globe_geometry(1.0, 64, 32, use_vertex_normal)        // create globe geometry with vertex normal vectors
+		geometry.BuildDataBuffers(true, false, true)                            // build data buffers for vertices and faces
+		material, _ := rc.CreateMaterial(world_img_filepath)                    // create material with a texture of world image
+		shader := g3d.NewShader_NormalTexture(rc)                               // use the standard NORMAL+TEXTURE shader
+		self.GSphere = g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
+	} else { // with texture UV coordinates only (without normal vectors and directional lighting)
+		use_vertex_normal := false
+		geometry := build_globe_geometry(1.0, 64, 32, use_vertex_normal)        // create globe geometry with texture UVs only
+		geometry.BuildDataBuffers(true, false, true)                            // build data buffers for vertices and faces
+		material, _ := rc.CreateMaterial(world_img_filepath)                    // create material with a texture of world image
+		shader := g3d.NewShader_TextureOnly(rc)                                 // use the standard TEXTURE_ONLY shader
+		self.GSphere = g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
+	}
+	// GlowRing around the globe (to make the globe stand out against black background)
+	//   (Note that GlowRing should be rendered in CAMERA space by Renderer)
+	if true {
+		geometry := build_glowring_geometry(1.0, 1.1, 64)                  // create geometry (a ring around the globe)
+		geometry.BuildDataBuffers(true, false, true)                       // build data buffers for vertices and faces
+		material, _ := rc.CreateMaterial("GLOW", "#445566")                // texture material for glow effect
+		shader := g3d.NewShader_TextureOnly(rc)                            // use the standard TEXTURE_ONLY shader
+		scnobj := g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
+		scnobj.UseBlend = true                                             // default is false
+		self.GlowRing = scnobj
+	} else {
+		geometry := build_glowring_geometry(1.0, 1.1, 64)             // create geometry (a ring around the globe)
+		geometry.BuildDataBuffersForWireframe()                       // build data buffers for vertices and faces
+		shader := g3d.NewShader_ColorOnly(rc)                         // use the standard TEXTURE_ONLY shader
+		scnobj := g3d.NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object
+		self.GlowRing = scnobj
+	}
+	self.modelmatrix.SetIdentity() // initialize as Identity matrix
 	return &self
-}
-
-func (self *Globe) IsReadyToRender() bool {
-	return self.GSphere.Material.IsTextureLoading() == false
 }
 
 // ----------------------------------------------------------------------------
 // Background Color
 // ----------------------------------------------------------------------------
 
-func (self *Globe) SetBkgColor(color string) *Globe {
+func (self *WorldGlobe) SetBkgColor(color string) *WorldGlobe {
 	rgba := common.ParseHexColor(color)
 	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
 
-func (self *Globe) GetBkgColor() [3]float32 {
+func (self *WorldGlobe) GetBkgColor() [3]float32 {
 	return self.bkgcolor
 }
 
@@ -47,7 +74,7 @@ func (self *Globe) GetBkgColor() [3]float32 {
 // Translation, Rotation, Scaling (by manipulating MODEL matrix)
 // ----------------------------------------------------------------------------
 
-func (self *Globe) SetTransformation(txyz [3]float32, axis [3]float32, angle_in_degree float32, scale float32) *Globe {
+func (self *WorldGlobe) SetTransformation(txyz [3]float32, axis [3]float32, angle_in_degree float32, scale float32) *WorldGlobe {
 	translation := common.NewMatrix4().SetTranslation(txyz[0], txyz[1], txyz[2])
 	rotation := common.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
 	scaling := common.NewMatrix4().SetScaling(scale, scale, scale)
@@ -55,48 +82,30 @@ func (self *Globe) SetTransformation(txyz [3]float32, axis [3]float32, angle_in_
 	return self
 }
 
-func (self *Globe) Translate(tx float32, ty float32, tz float32) *Globe {
+func (self *WorldGlobe) Translate(tx float32, ty float32, tz float32) *WorldGlobe {
 	translation := common.NewMatrix4().SetTranslation(tx, ty, tz)
 	self.modelmatrix.SetMultiplyMatrices(translation, &self.modelmatrix)
 	return self
 }
 
-func (self *Globe) Rotate(axis [3]float32, angle_in_degree float32) *Globe {
+func (self *WorldGlobe) Rotate(axis [3]float32, angle_in_degree float32) *WorldGlobe {
 	rotation := common.NewMatrix4().SetRotationByAxis(axis, angle_in_degree)
 	self.modelmatrix.SetMultiplyMatrices(rotation, &self.modelmatrix)
 	return self
 }
 
-func (self *Globe) Scale(scale float32) *Globe {
+func (self *WorldGlobe) Scale(scale float32) *WorldGlobe {
 	scaling := common.NewMatrix4().SetScaling(scale, scale, scale)
 	self.modelmatrix.SetMultiplyMatrices(scaling, &self.modelmatrix)
 	return self
 }
 
 // ----------------------------------------------------------------------------
-// Globe
+// WorldGlobe
 // ----------------------------------------------------------------------------
 
-func NewSceneObject_GlobeWithoutLight(rc gigl.GLRenderingContext) *g3d.SceneObject {
-	// Globe model with texture UV coordinates (without normal vectors and directional lighting)
-	geometry := build_globe_geometry(1.0, 64, 32, false)            // create globe geometry with texture UVs only
-	geometry.BuildDataBuffers(true, false, true)                    // build data buffers for vertices and faces
-	material, _ := rc.CreateMaterial("/assets/world.png")           // create material with a texture of world image
-	shader := g3d.NewShader_TextureOnly(rc)                         // use the standard TEXTURE_ONLY shader
-	return g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
-}
-
-func NewSceneObject_Globe(rc gigl.GLRenderingContext) *g3d.SceneObject {
-	// Globe model with texture AND normal vectors (for directional lighting)
-	geometry := build_globe_geometry(1.0, 64, 32, true)             // create globe geometry with vertex normal vectors
-	geometry.BuildDataBuffers(true, false, true)                    // build data buffers for vertices and faces
-	material, _ := rc.CreateMaterial("/assets/world.png")           // create material with a texture of world image
-	shader := g3d.NewShader_NormalTexture(rc)                       // use the standard NORMAL+TEXTURE shader
-	return g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
-}
-
 func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool) *g3d.Geometry {
-	// Globe (sphere) geometry with UV coordinates per vertex (to be used with a texture image)
+	// WorldGlobe (sphere) geometry with UV coordinates per vertex (to be used with a texture image)
 	//   Note that multiple vertices are assigned to north/south poles, as well as 0/360 longitude.
 	//   This approach results in more efficient data buffers than a simple sphere,
 	//   since we can build the buffers with single point per vertex, without any repetition.
@@ -133,28 +142,8 @@ func build_globe_geometry(radius float32, wsegs int, hsegs int, use_normals bool
 }
 
 // ----------------------------------------------------------------------------
-// GlowRing around the Globe
+// GlowRing around the WorldGlobe
 // ----------------------------------------------------------------------------
-
-func NewSceneObject_GlowRing(rc gigl.GLRenderingContext) *g3d.SceneObject {
-	// GlowRing around the globe, to make the globe stand out against black background.
-	// (Note that GlowRing should be rendered in CAMERA space by Renderer)
-	if true {
-		geometry := build_glowring_geometry(1.0, 1.1, 64)                  // create geometry (a ring around the globe)
-		geometry.BuildDataBuffers(true, false, true)                       // build data buffers for vertices and faces
-		material, _ := rc.CreateMaterial("GLOW", "#445566")                // texture material for glow effect
-		shader := g3d.NewShader_TextureOnly(rc)                            // use the standard TEXTURE_ONLY shader
-		scnobj := g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
-		scnobj.UseBlend = true                                             // default is false
-		return scnobj
-	} else {
-		geometry := build_glowring_geometry(1.0, 1.1, 64)             // create geometry (a ring around the globe)
-		geometry.BuildDataBuffersForWireframe()                       // build data buffers for vertices and faces
-		shader := g3d.NewShader_ColorOnly(rc)                         // use the standard TEXTURE_ONLY shader
-		scnobj := g3d.NewSceneObject(geometry, nil, nil, shader, nil) // set up the scene object
-		return scnobj
-	}
-}
 
 func build_glowring_geometry(in_radius float32, out_radius float32, nsegs int) *g3d.Geometry {
 	geometry := g3d.NewGeometry()

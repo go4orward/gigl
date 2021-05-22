@@ -107,8 +107,8 @@ func NewShader_InstancePoseColor(rc gigl.GLRenderingContext) gigl.GLShader {
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
 	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
 	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords")       // point coordinates
-	shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // instance pose
-	shader.SetBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // instance color
+	shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // instance pose (XY coordinates)
+	shader.SetBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // instance color (RGB packed in single float32)
 	shader.CheckBindings()                                               // check validity of the shader
 	return shader
 }

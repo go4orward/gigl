@@ -4,36 +4,45 @@ GIGL implements full set of high-level constructs of interactive 2D & 3D graphic
 (such as Camera, Scene, Geometry, Material, Overlay, etc.) entirely in Go, 
 so that they can be easily used in any OpenGL/WebGL environments on native applications or webapps in a browser.
 
-*At the moment, all the examples are running in WebGL/WASM environment on a browser, 
-but I plan to experiment with other OpenGL environments on native applications in near future.*
+*This project is under development, and backward-incompatible changes will be made.*
 
 ## How to Build & Run (WebGL/WASM example)
 
 Simplest example: &emsp; _(for explaining how WebGL works)_
 ```bash
-$ make                  # source : 'examples/webgl_1st/main.go'
-```
-![webgl1st_example result](assets/xscreen_webgl1st.png)
-
-2D example: &emsp; _(with animation & user interactions)_
-```bash
-$ make 2d               # source : 'examples/webgl_2d/main.go'
+$ make webgl_1st        # source : 'examples/webgl_1st/main.go'
 or
-$ make 2dui             # source : 'examples/webgl_2dui/main.go'
+$ make opengl_1st       # source : 'examples/opengl_1st/main.go'
 ```
-![webgl2d_example result](assets/xscreen_webgl2d.png)
+![webgl_1st_example result](examples/captured/xscreen_webgl1st.png)
+
+2D example: &emsp; _(for basic usage)_
+```bash
+$ make webgl_2d         # source : 'examples/webgl_2d/main.go'
+or
+$ make opengl_2d        # source : 'examples/opengl_2d/main.go'
+```
+![webgl_2d_example result](examples/captured/xscreen_webgl2d.png)
+
+2Di example: &emsp; _(with animation & user interactions)_
+```bash
+$ make webgl_2d         # source : 'examples/webgl_2d/main.go'
+```
+![webgl_2d_example result](examples/captured/xscreen_webgl2di.png)
 
 3D example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make 3d               # source : 'examples/webgl_3d/main.go'
+$ make webgl_3d        # source : 'examples/webgl_3d/main.go'
+or
+$ make opengl_3d       # source : 'examples/opengl_3d/main.go'
 ```
-![webgl3d_example result](assets/xscreen_webgl3d.png)
+![webgl_3d_example result](examples/captured/xscreen_webgl3d.png)
 
 Globe example: &emsp; _(with perspective & orthographic camera)_
 ```bash
-$ make globe            # source : 'examples/webgl_globe/main.go'
+$ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 ```
-![webglglobe_example result](assets/xscreen_webglglobe.png)
+![webgl_globe_example result](examples/captured/xscreen_webglglobe.png)
 
 ## ToDo List
 

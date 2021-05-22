@@ -6,16 +6,6 @@ import (
 	"github.com/go4orward/gigl"
 )
 
-func NewSceneObject_2DAxes(rc gigl.GLRenderingContext, length float32) *SceneObject {
-	// This example creates two lines for X (red) and Y (green) axes, with origin at (0,0)
-	geometry := NewGeometry()                                            // create an empty geometry
-	geometry.SetVertices([][2]float32{{0, 0}, {length, 0}, {0, length}}) // add three vertices
-	geometry.SetEdges([][]uint32{{0, 1}, {0, 2}})                        // add two edges
-	geometry.BuildDataBuffers(true, true, false)                         // build data buffers for vertices and edges
-	shader := NewShader_2DAxes(rc)                                       // create shader, and set its bindings
-	return NewSceneObject(geometry, nil, nil, shader, nil)               // set up the scene object (draw LINES)
-}
-
 func NewSceneObject_RedTriangle(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a red triangle with radius 0.5 at (0,0)
 	geometry := NewGeometry_Triangle(0.5)                  // create a triangle with radius 0.5 at (0,0)
@@ -41,13 +31,16 @@ func NewSceneObject_RectangleInstancesExample(rc gigl.GLRenderingContext) *Scene
 	material, _ := rc.CreateMaterial("#888888")                    // create material
 	shader := NewShader_InstancePoseColor(rc)                      // create shader, and set its bindings
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
-	scnobj.SetupPoses(5, 200*80, nil)                              // multiple poses for 200*80 rectangle instances
+	scnobj.SetInstanceBuffer(200*80, 5, nil)                       // multiple instances for 200*80 rectangles
 	for row := 0; row < 200; row++ {
 		for col := 0; col < 80; col++ {
+			// r, g, b := float32(1.0), float32(0.1), float32(0.1)
 			ii, jj := math.Abs(float64(row)-100)/100, math.Abs(float64(col)-40)/40
 			r, g, b := float32(ii), float32(jj), 1-float32((ii+jj)/2)
-			scnobj.SetPoseValues(row*80+col, 0, float32(col), float32(row)) // position (tx,ty)
-			scnobj.SetPoseValues(row*80+col, 2, r, g, b)                    // color    (r,g,b)
+			// r, g, b := uint8(ii*255), uint8(jj*255), uint8((1-(ii+jj)/2)*255)
+			// r, g, b = uint8(255), uint8(255), uint8(255)
+			scnobj.SetInstancePoseValues(row*80+col, 0, float32(col), float32(row)) // position (tx,ty)
+			scnobj.SetInstancePoseValues(row*80+col, 2, r, g, b)                    // color RGB
 		}
 	}
 	return scnobj

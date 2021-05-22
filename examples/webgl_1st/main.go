@@ -1,38 +1,28 @@
-// +build js,wasm
 package main
 
 import (
 	"fmt"
 
-	"github.com/go4orward/gigl/env/webgl1"
+	"github.com/go4orward/gigl/env/webgl10"
 )
 
 func main() {
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
 	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/webgl_example.go'.
-	fmt.Println("Hello WebGL!")                         // printed in the browser console
-	wcanvas, err := webgl1.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	fmt.Println("Hello WebGL 1.0")                       // printed in the browser console
+	wcanvas, err := webgl10.NewWebGLCanvas("wasmcanvas") // ID of canvas element
 	if err != nil {
 		fmt.Printf("Failed to start WebGL : %v\n", err)
 		return
 	}
+	rc := wcanvas.GetGLRenderingContext()
+	context, c := wcanvas.RcGetWebGLRenderingContext(), rc.GetConstants()
+
+	// Geometry
 	vertices := []float32{-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0}
 	indices := []uint32{2, 1, 0}
-	vertex_shader_code := `
-		attribute vec3 xyz;
-		void main(void) {
-			gl_Position = vec4(xyz, 1.0);
-		}`
-	fragment_shader_code := `
-		void main(void) {
-			gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
-		}`
-	rc := wcanvas.GetWebGLRenderingContext()
-	context, c := rc.GetContext(), rc.GetConstants()
-
-	//// Geometry ////
-	var vertices_array = rc.ConvertGoSliceToJsTypedArray(vertices)
-	var indices_array = rc.ConvertGoSliceToJsTypedArray(indices)
+	var vertices_array = wcanvas.RcConvertGoSliceToJsTypedArray(vertices)
+	var indices_array = wcanvas.RcConvertGoSliceToJsTypedArray(indices)
 	vertexBuffer := context.Call("createBuffer", c.ARRAY_BUFFER)                     // create buffer
 	context.Call("bindBuffer", c.ARRAY_BUFFER, vertexBuffer)                         // bind the buffer
 	context.Call("bufferData", c.ARRAY_BUFFER, vertices_array, c.STATIC_DRAW)        // pass data to buffer
@@ -41,17 +31,28 @@ func main() {
 	context.Call("bufferData", c.ELEMENT_ARRAY_BUFFER, indices_array, c.STATIC_DRAW) // pass data to the buffer
 
 	//// Shaders ////
-	vertShader := context.Call("createShader", c.VERTEX_SHADER)    // Create a vertex shader object
-	context.Call("shaderSource", vertShader, vertex_shader_code)   // Attach vertex shader source code
-	context.Call("compileShader", vertShader)                      // Compile the vertex shader
-	fragShader := context.Call("createShader", c.FRAGMENT_SHADER)  // Create fragment shader object
-	context.Call("shaderSource", fragShader, fragment_shader_code) // Attach fragment shader source code
-	context.Call("compileShader", fragShader)                      // Compile the fragment shader
-	shaderProgram := context.Call("createProgram")                 // Create a shader program to combine the two shaders
-	context.Call("attachShader", shaderProgram, vertShader)        // Attach the compiled vertex shader
-	context.Call("attachShader", shaderProgram, fragShader)        // Attach the compiled fragment shader
-	context.Call("linkProgram", shaderProgram)                     // Make the shader program linked
-	context.Call("useProgram", shaderProgram)                      // Let the completed shader program to be used
+	vshader_source := `
+		attribute vec3 xyz;
+		void main(void) {
+			gl_Position = vec4(xyz, 1.0);
+		}`
+	fshader_source := `
+		void main(void) {
+			gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+		}`
+	vshader := context.Call("createShader", c.VERTEX_SHADER)   // Create a vertex shader object
+	context.Call("shaderSource", vshader, vshader_source)      // Attach vertex shader source code
+	context.Call("compileShader", vshader)                     // Compile the vertex shader
+	fshader := context.Call("createShader", c.FRAGMENT_SHADER) // Create fragment shader object
+	context.Call("shaderSource", fshader, fshader_source)      // Attach fragment shader source code
+	context.Call("compileShader", fshader)                     // Compile the fragment shader
+	shaderProgram := context.Call("createProgram")             // Create a shader program to combine the two shaders
+	context.Call("attachShader", shaderProgram, vshader)       // Attach the compiled vertex shader
+	context.Call("attachShader", shaderProgram, fshader)       // Attach the compiled fragment shader
+	context.Call("linkProgram", shaderProgram)                 // Make the shader program linked
+	context.Call("useProgram", shaderProgram)                  // Let the completed shader program to be used
+	context.Call("deleteShader", vshader)
+	context.Call("deleteShader", fshader)
 
 	//// Attributes ////
 	loc := context.Call("getAttribLocation", shaderProgram, "xyz")    // Get the location of attribute 'xyz' in the shader
@@ -65,4 +66,5 @@ func main() {
 
 	//// Draw the geometry ////
 	context.Call("drawElements", c.TRIANGLES, len(indices), c.UNSIGNED_SHORT, 0)
+	wcanvas.Run(nil)
 }
