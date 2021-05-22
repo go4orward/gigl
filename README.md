@@ -55,8 +55,8 @@ $ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 
 ## Notes on OpenGL Environments
 
-Supporting different OpenGL environments is not a trivial task, and it always has been a headache for a starter. 
-We really want to make it as easy as possible.
+Supporting different OpenGL environments is not a trivial task, and it always have been a headache for a starter. 
+We really want to make it as easy as possible for Go programmers.
 For a webapp in a browser, we use the experimental Go support (syscall/js) for [WebAssembly](https://github.com/golang/go/wiki/WebAssembly).
 For a native app, we use [go-gl](https://github.com/go-gl)'s modules such as [gl](https://github.com/go-gl/gl) & [glfw](https://github.com/go-gl/glfl).
 In order to deal with different versions of GLSL (OpenGL Shading Language), we have written all the shader codes in *WebGL 1.0* (`#version 100 es`) as the default GLSL version, and convert the shader codes automatically into *OpenGL 4.1* (`#version 410`) for OpenGL environments. Note that *OpenGL 4.1* and *OpenGL ES 2.0* and *WebGL 1.0* are mostly compatible with each other.
