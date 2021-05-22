@@ -52,7 +52,6 @@ $ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 - graticules on the globe
 - coast lines and country border lines on the world map
 - support for world map projections (Mercator, Stereographic, etc)
-- 'webglgalaxy' maybe? :)
 
 ## Thanks
 
