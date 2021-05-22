@@ -8,7 +8,7 @@ so that they can be easily used in any OpenGL/WebGL environments on native appli
 
 ## How to Build & Run (WebGL/WASM example)
 
-Simplest example: &emsp; _(for explaining how WebGL works)_
+Simplest example: &emsp; _(for explaining how WebGL/OpenGL works)_
 ```bash
 $ make                  # source : 'examples/webgl_1st/main.go'
 or
@@ -16,7 +16,7 @@ $ make opengl_1st       # source : 'examples/opengl_1st/main.go'
 ```
 ![webgl_1st_example result](examples/captured/xscreen_webgl1st.png)
 
-2D example: &emsp; _(for basic usage)_
+2D example: &emsp; _(for basic 2D usage with Geometry)_
 ```bash
 $ make webgl_2d         # source : 'examples/webgl_2d/main.go'
 or
@@ -30,7 +30,7 @@ $ make webgl_2di        # source : 'examples/webgl_2di/main.go'
 ```
 ![webgl_2d_example result](examples/captured/xscreen_webgl2di.png)
 
-3D example: &emsp; _(with perspective & orthographic camera)_
+3D example: &emsp; _(basic 3D usage with Geometry, Texture and Camera)_
 ```bash
 $ make webgl_3d        # source : 'examples/webgl_3d/main.go'
 or
@@ -38,7 +38,7 @@ $ make opengl_3d       # source : 'examples/opengl_3d/main.go'
 ```
 ![webgl_3d_example result](examples/captured/xscreen_webgl3d.png)
 
-Globe example: &emsp; _(with perspective & orthographic camera)_
+Globe example: &emsp; _(with a specialized sphere for the Globe)_
 ```bash
 $ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 ```
