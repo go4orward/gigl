@@ -4,7 +4,7 @@ GIGL implements full set of high-level constructs of interactive 2D & 3D graphic
 (such as Camera, Scene, Geometry, Material, Overlay, etc.) entirely in Go, 
 so that they can be easily used in any OpenGL/WebGL environments on native applications or webapps in a browser.
 
-*This project is under development, and backward-incompatible changes will be made.*
+*This project is under development, and backward-incompatible changes can be made.*
 
 ## How to Build & Run 
 
