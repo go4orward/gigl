@@ -56,7 +56,7 @@ $ make webgl_globe    # source : 'examples/webgl_globe/main.go'
 ## Thanks
 
 I hope this project can help many people to learn 2D & 3D graphics and to build awesome applications in Go.  
-Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly for Go. If you hava a feedback or suggestion, contact [go4orward](https://github.com/go4orward).
+Many thanks to [Richard Musiol](https://github.com/neelance), for his vision and contributions for GopherJS and WebAssembly. If you hava a feedback or suggestion, contact [go4orward](https://github.com/go4orward).
 
 Resources taken from:
 - [Go Gopher images](https://golang.org/doc/gopher/) : originally created by Renee French
