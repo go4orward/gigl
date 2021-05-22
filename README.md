@@ -64,7 +64,7 @@ In order to deal with different versions of GLSL (OpenGL Shading Language), we h
 ## Thanks
 
 I hope this project can help many people to learn 2D & 3D graphics and to build awesome applications in Go.  
-Special thanks to [go-gl](https://github.com/go-gl) group and [Richard Musiol](https://github.com/neelance), for their visions and so many contributions.  
+Special thanks to the members of [go-gl](https://github.com/go-gl) group and [Richard Musiol](https://github.com/neelance), for their visions and so many contributions.  
 If you hava a feedback or suggestion, contact [go4orward](https://github.com/go4orward).
 
 Resources taken from:
