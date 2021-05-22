@@ -16,7 +16,7 @@ $ make opengl_1st       # source : 'examples/opengl_1st/main.go'
 ```
 ![webgl_1st_example result](examples/captured/xscreen_webgl1st.png)
 
-2D example: &emsp; _(for basic 2D usage with Geometry)_
+2D example: &emsp; _(for basic 2D usage with Geometry and Labels & Markers)_
 ```bash
 $ make webgl_2d         # source : 'examples/webgl_2d/main.go'
 or
