@@ -4,6 +4,11 @@ GIGL implements full set of high-level constructs of interactive 2D & 3D graphic
 (such as Camera, Scene, Geometry, Material, Overlay, etc.) entirely in Go, 
 so that they can be easily used in any OpenGL/WebGL environments on native applications or webapps in a browser.
 
+For a webapp in a browser, we use the experimental Go support (syscall/js) for [WebAssembly](https://github.com/golang/go/wiki/WebAssembly).  
+For a native app, we use [go-gl](https://github.com/go-gl)'s modules like [gl](https://github.com/go-gl/gl) & [glfw](https://github.com/go-gl/glfl).  
+In order to deal with different versions of GLSL (OpenGL Shading Language), we used WebGL 1.0 ("#version 100 es") as the 
+default GLSL version for shader's source codes, and convert them into OpenGL 4.1 ("#version 410") for OpenGL environments.
+
 *This project is under development, and backward-incompatible changes will be made.*
 
 ## How to Build & Run 
