@@ -6,7 +6,7 @@ so that they can be easily used in any OpenGL/WebGL environments on native appli
 
 *This project is under development, and backward-incompatible changes will be made.*
 
-## How to Build & Run (WebGL/WASM example)
+## How to Build & Run 
 
 Simplest example: &emsp; _(for explaining how WebGL/OpenGL works)_
 ```bash
