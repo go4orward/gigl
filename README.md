@@ -10,7 +10,7 @@ so that they can be easily used in any OpenGL/WebGL environments on native appli
 
 Simplest example: &emsp; _(for explaining how WebGL/OpenGL works)_
 ```bash
-$ make                  # source : 'examples/webgl_1st/main.go'
+$ make                  # source : [examples/webgl_1st/main.go]()
 or
 $ make opengl_1st       # source : 'examples/opengl_1st/main.go'
 ```
