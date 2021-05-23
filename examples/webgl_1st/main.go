@@ -19,7 +19,7 @@ func main() {
 	c := rc.GetConstants()
 	wrc := wcanvas.GetWebGLRenderingContext() // just for WebGL demo only
 
-	// Geometry
+	// Build Geometry and its data buffers
 	vertices := []float32{-0.5, 0.5, 0, -0.5, -0.5, 0, 0.5, -0.5, 0}
 	indices := []uint32{2, 1, 0}
 	var vertices_array = wcanvas.ConvertGoSliceToJsTypedArray(vertices)
@@ -55,7 +55,7 @@ func main() {
 	wrc.Call("deleteShader", vshader)
 	wrc.Call("deleteShader", fshader)
 
-	// Bind Attributes
+	// Bind Attributes with the data buffers
 	loc := wrc.Call("getAttribLocation", shaderProgram, "xyz")    // Get the location of attribute 'xyz' in the shader
 	wrc.Call("vertexAttribPointer", loc, 3, c.FLOAT, false, 0, 0) // Point 'xyz' location to the positions of ARRAY_BUFFER
 	wrc.Call("enableVertexAttribArray", loc)                      // Enable the use of attribute 'xyz' from ARRAY_BUFFER
