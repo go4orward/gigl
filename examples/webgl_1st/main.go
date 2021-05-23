@@ -55,7 +55,7 @@ func main() {
 	wrc.Call("deleteShader", vshader)
 	wrc.Call("deleteShader", fshader)
 
-	// Attributes
+	// Bind Attributes
 	loc := wrc.Call("getAttribLocation", shaderProgram, "xyz")    // Get the location of attribute 'xyz' in the shader
 	wrc.Call("vertexAttribPointer", loc, 3, c.FLOAT, false, 0, 0) // Point 'xyz' location to the positions of ARRAY_BUFFER
 	wrc.Call("enableVertexAttribArray", loc)                      // Enable the use of attribute 'xyz' from ARRAY_BUFFER
