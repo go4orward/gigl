@@ -70,11 +70,11 @@ func (self *WebGLCanvas) String() string {
 	return fmt.Sprintf("WebGLCanvas{id:'%s' size:%dx%d}\n", self.id, self.wh[0], self.wh[1])
 }
 
-func (self *WebGLCanvas) RcGetWebGLRenderingContext() js.Value {
+func (self *WebGLCanvas) GetWebGLRenderingContext() js.Value {
 	return self.rc.context
 }
 
-func (self *WebGLCanvas) RcConvertGoSliceToJsTypedArray(a interface{}) js.Value {
+func (self *WebGLCanvas) ConvertGoSliceToJsTypedArray(a interface{}) js.Value {
 	return self.rc.ConvertGoSliceToJsTypedArray(a)
 }
 
