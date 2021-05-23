@@ -31,7 +31,7 @@ func main() {
 	wrc.Call("bindBuffer", c.ELEMENT_ARRAY_BUFFER, indexBuffer)                  // bind the buffer
 	wrc.Call("bufferData", c.ELEMENT_ARRAY_BUFFER, indices_array, c.STATIC_DRAW) // pass data to the buffer
 
-	//// Shaders ////
+	// Shaders
 	vshader_source := `
 		attribute vec3 xyz;
 		void main(void) {
@@ -55,17 +55,17 @@ func main() {
 	wrc.Call("deleteShader", vshader)
 	wrc.Call("deleteShader", fshader)
 
-	//// Attributes ////
+	// Attributes
 	loc := wrc.Call("getAttribLocation", shaderProgram, "xyz")    // Get the location of attribute 'xyz' in the shader
 	wrc.Call("vertexAttribPointer", loc, 3, c.FLOAT, false, 0, 0) // Point 'xyz' location to the positions of ARRAY_BUFFER
 	wrc.Call("enableVertexAttribArray", loc)                      // Enable the use of attribute 'xyz' from ARRAY_BUFFER
 
-	//// Draw the scene ////
+	// Prepare to draw
 	wrc.Call("clearColor", 1.0, 1.0, 1.0, 1.0) // Set clearing color
 	wrc.Call("clear", c.COLOR_BUFFER_BIT)      // Clear the canvas
 	wrc.Call("enable", c.DEPTH_TEST)           // Enable the depth test
 
-	//// Draw the geometry ////
+	// Draw the geometry
 	wrc.Call("drawElements", c.TRIANGLES, len(indices), c.UNSIGNED_SHORT, 0)
 	wcanvas.Run(nil)
 }
