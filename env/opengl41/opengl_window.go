@@ -13,7 +13,7 @@ type OpenGLWindow struct {
 	wh     [2]int                  //
 	window *glfw.Window            //
 	rc     *OpenGLRenderingContext //
-
+	paused bool                    //
 }
 
 func NewOpenGLWindow(width int, height int, title string, resizable bool) (*OpenGLWindow, error) {
@@ -82,8 +82,9 @@ func (self *OpenGLWindow) SetEventHandlerForWindowResize(handler func(w int, h i
 
 func (self *OpenGLWindow) Run(draw_handler func(now float64)) {
 	// run UI animation loop forever, with the given 'draw_handler'
+	self.paused = false
 	for !self.window.ShouldClose() {
-		if draw_handler != nil {
+		if draw_handler != nil && !self.paused {
 			now := glfw.GetTime()
 			draw_handler(now)
 			self.window.SwapBuffers()
@@ -104,4 +105,12 @@ func (self *OpenGLWindow) RunOnce(draw_handler func(now float64)) {
 		}
 		glfw.PollEvents()
 	}
+}
+
+func (self *OpenGLWindow) Pause() {
+	self.paused = true
+}
+
+func (self *OpenGLWindow) Resume() {
+	self.paused = false
 }

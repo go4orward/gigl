@@ -28,6 +28,7 @@ type WebGLCanvas struct {
 	evthandler_for_scroll      func(canvasxy [2]int, dx int, dy int, keystat [4]bool)
 	wasm_handler_for_draw      js.Func
 	user_handler_for_draw      func(now float64)
+	paused                     bool
 }
 
 func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
@@ -251,10 +252,11 @@ func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h in
 
 func (self *WebGLCanvas) Run(draw_handler func(now float64)) {
 	// run UI animation loop forever, with the given 'draw_handler'
+	self.paused = false
 	if draw_handler != nil {
 		self.user_handler_for_draw = draw_handler
 		self.wasm_handler_for_draw = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-			if self.user_handler_for_draw != nil {
+			if self.user_handler_for_draw != nil && !self.paused {
 				now := args[0].Float() // DOMHighResTimeStamp similar to performance.now()
 				self.user_handler_for_draw(now)
 			}
@@ -288,4 +290,12 @@ func (self *WebGLCanvas) RunOnce(draw_handler func(now float64)) {
 		js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
 	}
 	<-make(chan bool) // wait for events (without exiting)
+}
+
+func (self *WebGLCanvas) Pause() {
+	self.paused = true
+}
+
+func (self *WebGLCanvas) Resume() {
+	self.paused = false
 }
