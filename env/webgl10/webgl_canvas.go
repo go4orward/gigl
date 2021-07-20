@@ -185,7 +185,11 @@ func (self *WebGLCanvas) setup_mouse_wheel_common_handler() {
 		if keystat[3] { // ZOOM, if SHIFT is was pressed
 			if self.evthandler_for_zoom != nil {
 				cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
-				self.mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
+				delta := float64(event.Get("deltaY").Int())
+				if math.Abs(delta) > 100 { // on Windows, mouse wheel delta is too big (+/-125)
+					delta = delta * 0.1
+				}
+				self.mouse_wheel_scale += delta // [ 0 ~ 500(default) ~ 1000 ]
 				self.mouse_wheel_scale = float64(math.Max(0, math.Min(self.mouse_wheel_scale, 1000)))
 				scale_exp := (self.mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
 				scale := math.Pow(10, scale_exp)                      // [ 0.01 ~ 1(default) ~ 100.0 ]
