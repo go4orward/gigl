@@ -229,7 +229,8 @@ func (self *WebGLCanvas) SetEventHandlerForKeyPress(handler func(key string, cod
 		}
 		return nil
 	})
-	js.Global().Get("document").Call("addEventListener", "keypress", js_handler)
+	// js.Global().Get("document").Call("addEventListener", "keypress", js_handler)
+	js.Global().Get("document").Call("addEventListener", "keydown", js_handler) // ARROW keys are captured by 'keydown' only
 }
 
 func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h int)) {
