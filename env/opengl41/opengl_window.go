@@ -48,6 +48,10 @@ func (self *OpenGLWindow) String() string {
 	return fmt.Sprintf("OpenGLWindow{size:%dx%d}\n", self.wh[0], self.wh[1])
 }
 
+func (self *OpenGLWindow) SwapBuffers() {
+	self.window.SwapBuffers()
+}
+
 // ----------------------------------------------------------------------------
 // User Interactions (Event Handling)
 // ----------------------------------------------------------------------------
