@@ -40,7 +40,7 @@ func (self *Renderer) RenderAxes(camera *Camera, length float32) {
 		geometry.SetVertices([][2]float32{{0, 0}, {length, 0}, {0, length}}) // add three vertices
 		geometry.SetEdges([][]uint32{{0, 1}, {0, 2}})                        // add two edges
 		geometry.BuildDataBuffers(true, true, false)                         // build data buffers for vertices and edges
-		shader := NewShader_2DAxes(self.rc)                                  // create shader, and set its bindings
+		shader := NewShaderFor2DAxes(self.rc)                                // create shader, and set its bindings
 		self.axes = NewSceneObject(geometry, nil, nil, shader, nil)          // set up the scene object (draw LINES)
 	}
 	rc, c := self.rc, self.rc.GetConstants()
@@ -225,8 +225,8 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 		switch autobinding0 {
 		case "material.color":
 			c := [4]float32{0, 1, 1, 1}
-			if scnobj.Material != nil {
-				c = scnobj.Material.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
+			if mcolor, ok := scnobj.Material.(gigl.GLMaterialColors); ok {
+				c = mcolor.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
 			}
 			switch dtype {
 			case "vec3":
@@ -237,16 +237,27 @@ func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
 				return nil
 			}
 		case "material.texture":
-			if scnobj.Material == nil || !scnobj.Material.IsTextureReady() || scnobj.Material.IsTextureLoading() {
-				return errors.New("Texture is not ready")
+			if mtex, ok := scnobj.Material.(gigl.GLMaterialTexture); ok {
+				if !mtex.IsTextureReady() && !mtex.IsTextureLoading() {
+					self.rc.LoadMaterial(scnobj.Material)
+				} else if !mtex.IsTextureLoading() {
+					txt_unit := 0
+					if len(autobinding_split) >= 2 {
+						txt_unit, _ = strconv.Atoi(autobinding_split[1])
+					}
+					rc.GLActiveTexture(txt_unit)                      // activate texture unit N
+					rc.GLBindTexture(c.TEXTURE_2D, mtex.GetTexture()) // bind the texture
+					rc.GLUniform1i(location, txt_unit)                // give shader the unit number
+				}
+				return nil
+			} else {
+				return errors.New("MaterialTexture is not ready")
 			}
-			txt_unit := 0
-			if len(autobinding_split) >= 2 {
-				txt_unit, _ = strconv.Atoi(autobinding_split[1])
+		case "material.texture_rgba":
+			if mtex, ok := scnobj.Material.(gigl.GLMaterialTexture); ok && mtex.IsTextureReady() {
+				c := mtex.GetTextureRGB()
+				rc.GLUniform4f(location, c[0], c[1], c[2], 1.0)
 			}
-			rc.GLActiveTexture(txt_unit)                                 // activate texture unit N
-			rc.GLBindTexture(c.TEXTURE_2D, scnobj.Material.GetTexture()) // bind the texture
-			rc.GLUniform1i(location, txt_unit)                           // give shader the unit number
 			return nil
 		case "renderer.aspect": // vec2
 			wh := rc.GetWH()

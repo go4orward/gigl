@@ -5,8 +5,10 @@ import (
 	"math"
 
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g3d/c3d"
 )
+
+const inRadian = math.Pi / 180.0
+const inDegree = 180.0 / math.Pi
 
 // ----------------------------------------------------------------------------
 // Camera Initialization Parameters
@@ -21,9 +23,9 @@ type CamInternalParams struct {
 }
 
 type CamExternalPose struct {
-	From [3]float32 // camera position in WORLD space	default: [0  0 10]
-	At   [3]float32 // look-at target  in WORLD space	default: [0  0  0]
-	Up   [3]float32 // camera up direction				default: [0  1  0]
+	From V3d // camera position in WORLD space	default: [0  0 10]
+	At   V3d // look-at target  in WORLD space	default: [0  0  0]
+	Up   V3d // camera up direction				default: [0  1  0]
 }
 
 // ----------------------------------------------------------------------------
@@ -35,7 +37,7 @@ type Camera struct {
 	ip          CamInternalParams //
 	projmatrix  common.Matrix4    // projection matrix
 	viewmatrix  common.Matrix4    // view matrix Mcw (transformation from WORLD to CAMERA space)
-	center      [3]float32        // camera position in world space
+	center      V3d               // camera position in world space
 }
 
 func NewCamera(perspective bool, ip *CamInternalParams, ep *CamExternalPose) *Camera {
@@ -64,27 +66,29 @@ func (self *Camera) GetViewMatrix() *common.Matrix4 {
 	return &self.viewmatrix
 }
 
-func (self *Camera) ShowInfo() {
+func (self *Camera) Summary() string {
+	summary := ""
 	wh, fov, zoom, nearfar := self.ip.WH, self.ip.Fov, self.ip.Zoom, self.ip.NearFar
 	if self.perspective {
-		fmt.Printf("Perspective Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
-		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.0f°  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
+		summary += fmt.Sprintf("Perspective Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
+		summary += fmt.Sprintf("  Parameters : AspectRatio=[%d:%d]  fov=%.0f°  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
 	} else {
-		fmt.Printf("Orthographic Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
-		fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
+		summary += fmt.Sprintf("Orthographic Camera  centered at [%5.2f %5.2f %5.2f]\n", self.center[0], self.center[1], self.center[2])
+		summary += fmt.Sprintf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f  nearfar=[%.2f %.2f]\n", wh[0], wh[1], fov, zoom, nearfar[0], nearfar[1])
 	}
 	p := self.projmatrix.GetElements() // Note that Matrix4 is column-major (just like WebGL)
 	v := self.viewmatrix.GetElements()
-	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[0], p[4], p[8], p[12], v[0], v[4], v[8], v[12])
-	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[1], p[5], p[9], p[13], v[1], v[5], v[9], v[13])
-	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[2], p[6], p[10], p[14], v[2], v[6], v[10], v[14])
-	fmt.Printf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[3], p[7], p[11], p[15], v[3], v[7], v[11], v[15])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[0], p[4], p[8], p[12], v[0], v[4], v[8], v[12])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[1], p[5], p[9], p[13], v[1], v[5], v[9], v[13])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[2], p[6], p[10], p[14], v[2], v[6], v[10], v[14])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %5.2f %7.2f ]\n", p[3], p[7], p[11], p[15], v[3], v[7], v[11], v[15])
+	return summary
 }
 
 func (self *Camera) CheckInternalParameters() *Camera {
 	param_fixed := false
 	if true { // check if near/far values are appropriate, w.r.t. camera's from/at position
-		camdist := c3d.Length(self.center)
+		camdist := self.center.Length()
 		if camdist < self.ip.NearFar[0] {
 			self.ip.NearFar[0] = camdist / 2.0
 			param_fixed = true
@@ -136,8 +140,8 @@ func (self *Camera) UpdateProjectionMatrix() {
 		c := -(far + near) / (far - near)
 		d := -2 * far * near / (far - near)
 		// factor for 'field of view' (fov 15 degree will cover width 2 at distance 10 in full screen)
-		// ff := float32(math.Tan(float64(self.fov/2)*InRadian)) * 70
-		ff := 1.0 / float32(math.Tan(float64(self.ip.Fov/2)*InRadian))
+		// ff := float32(math.Tan(float64(self.fov/2)*inRadian)) * 70
+		ff := 1.0 / float32(math.Tan(float64(self.ip.Fov/2)*inRadian))
 		self.projmatrix.Set(
 			ff*x, 0.0, 0.0, 0.0,
 			0.0, ff*y, 0.0, 0.0,
@@ -163,12 +167,12 @@ func (self *Camera) UpdateProjectionMatrix() {
 // Camera Pose
 // ----------------------------------------------------------------------------
 
-func (self *Camera) SetPose(from [3]float32, lookat [3]float32, up [3]float32) *Camera {
-	camY := c3d.Normalize(up)
-	camZ := c3d.Normalize(c3d.SubAB(from, lookat))
-	camX := c3d.Normalize(c3d.CrossAB(camY, camZ))     // Normalize(), because 'up' may not be orthogonal
-	camY = c3d.CrossAB(camZ, camX)                     // camY ('up' vector) is updated to make it orthogonal
-	self.SetPoseWithCameraAxes(camX, camY, camZ, from) // update the viewMatrix
+func (self *Camera) SetPose(from V3d, lookat V3d, up V3d) *Camera {
+	camY := up.Normalize()
+	camZ := NewV3dBySub(from, lookat).Normalize()
+	camX := camY.Cross(camZ).Normalize()
+	camY = camZ.Cross(camX)
+	self.SetPoseWithCameraAxes(*camX, *camY, *camZ, from) // update the viewMatrix
 	return self
 }
 

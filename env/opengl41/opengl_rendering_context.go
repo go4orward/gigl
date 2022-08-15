@@ -71,15 +71,15 @@ func (self *OpenGLRenderingContext) GetEnvVariable(vname string, dtype string) i
 }
 
 // ----------------------------------------------------------------------------
-// Create Material & Shader
+// Material & Shader
 // ----------------------------------------------------------------------------
 
-func (self *OpenGLRenderingContext) CreateMaterial(source string, options ...interface{}) (gigl.GLMaterial, error) {
-	return new_opengl_material(self, source, options...)
+func (self *OpenGLRenderingContext) LoadMaterial(material gigl.GLMaterial) error {
+	return load_material(self, material)
 }
 
 func (self *OpenGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
-	return new_opengl_shader(self, vertex_shader, fragment_shader)
+	return create_shader(self, vertex_shader, fragment_shader)
 }
 
 // ----------------------------------------------------------------------------

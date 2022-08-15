@@ -29,7 +29,7 @@ func (self *Scene) String() string {
 // ----------------------------------------------------------------------------
 
 func (self *Scene) SetBkgColor(color string) *Scene {
-	rgba := common.ParseHexColor(color)
+	rgba := common.RGBAFromHexString(color)
 	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }

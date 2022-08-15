@@ -50,30 +50,26 @@ func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
 	return &sobj
 }
 
-func (self *SceneObject) ShowInfo() {
-	fmt.Printf("SceneObject ")
-	self.Geometry.ShowInfo()
+func (self *SceneObject) Summary() string {
+	summary := "SceneObject " + self.Geometry.Summary()
 	if self.instance_buffer != nil {
-		fmt.Printf("  Instancess : count=%d stride=%d\n", self.instance_count, self.instance_stride)
+		summary += fmt.Sprintf("  Instancess : count=%d stride=%d\n", self.instance_count, self.instance_stride)
 	}
 	if self.Material != nil {
-		fmt.Printf("  ")
-		self.Material.ShowInfo()
+		summary += fmt.Sprintf("  %s", self.Material.MaterialSummary())
 	}
 	if self.VShader != nil {
-		fmt.Printf("  VERT ")
-		self.VShader.ShowInfo()
+		summary += fmt.Sprintf("  VERT %s", self.VShader.Summary())
 	}
 	if self.EShader != nil {
-		fmt.Printf("  EDGE ")
-		self.EShader.ShowInfo()
+		summary += fmt.Sprintf("  EDGE %s", self.EShader.Summary())
 	}
 	if self.FShader != nil {
-		fmt.Printf("  FACE ")
-		self.FShader.ShowInfo()
+		summary += fmt.Sprintf("  FACE %s", self.FShader.Summary())
 	}
-	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
-	fmt.Printf("  Children : %d\n", len(self.children))
+	summary += fmt.Sprintf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
+	summary += fmt.Sprintf("  Children : %d\n", len(self.children))
+	return summary
 }
 
 // ----------------------------------------------------------------------------

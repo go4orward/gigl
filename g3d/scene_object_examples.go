@@ -4,33 +4,34 @@ import (
 	"math"
 
 	"github.com/go4orward/gigl"
+	"github.com/go4orward/gigl/g2d"
 )
 
 func NewSceneObject_CylinderWireframe(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a cylinder, to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works)
-	geometry := NewGeometry_Cylinder(6, 0.5, 1.0, 0, true)      // create a cylinder with radius 0.5 and heigt 1.0
+	geometry := NewGeometryCylinder(6, 0.5, 1.0, 0, true)       // create a cylinder with radius 0.5 and heigt 1.0
 	geometry.BuildDataBuffersForWireframe()                     // extract wireframe edges from faces
-	material, _ := rc.CreateMaterial("#888888")                 // create material with yellow color
+	material := g2d.NewMaterialColors("#888888")                //
 	shader := NewShader_ColorOnly(rc)                           // use the standard COLOR_ONLY shader
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
 func NewSceneObject_CubeWithTexture(rc gigl.GLRenderingContext) *SceneObject {
-	geometry := NewGeometry_CubeWithTexture(1.0, 1.0, 1.0)
+	geometry := NewGeometryCubeWithTexture(1.0, 1.0, 1.0)
 	geometry.BuildNormalsForFace()
 	geometry.BuildDataBuffers(true, false, true)                // build data buffers for vertices and faces
-	material, _ := rc.CreateMaterial("/assets/gopher.png")      // create material with a texture image
+	material := g2d.NewMaterialTexture("/assets/gopher.png")    // create material with a texture image
 	shader := NewShader_NormalTexture(rc)                       // use the standard NORMAL+TEXTURE shader
 	return NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 }
 
 func NewSceneObject_CubeInstances(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates 40,000 instances of a single geometry, each with its own pose (tx, ty)
-	geometry := NewGeometry_Cube(0.08, 0.08, 0.08)                 // create a cube of size 0.08
+	geometry := NewGeometryCube(0.08, 0.08, 0.08)                  // create a cube of size 0.08
 	geometry.BuildNormalsForFace()                                 // prepare face normal vectors
 	geometry.BuildDataBuffers(true, false, true)                   //
-	material, _ := rc.CreateMaterial("#888888")                    // create material
+	material := g2d.NewMaterialColors("#888888")                   //
 	shader := NewShader_InstancePoseColor(rc)                      // create shader, and set its bindings
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 	scnobj.SetInstanceBuffer(10*10*10, 6, nil)
@@ -53,11 +54,11 @@ func NewSceneObject_Airplane(rc gigl.GLRenderingContext) *SceneObject {
 	centers := [][3]float32{{0, -0.025, -1}, {0, -0.025, -0.99}, {0, -0.02, -0.9}, {0, -0.01, -0.6}, {0, 0, +0.0}, {0, 0, +0.8}, {0, 0, +0.9}, {0, 0, +0.99}, {0, 0, +1}}
 	radii := []float32{0, 0.01, 0.04, 0.08, 0.1, 0.1, 0.08, 0.02, 0}
 	wingth := float32(0.02)
-	pbody := NewGeometry_SolidFromCentersAndRadii(centers, radii, 8)
-	rwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.0}, {+0.8, -0.3}, {+0.8, -0.2}, {0, 0.4}}, wingth)
-	lwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.4}, {-0.8, -0.2}, {-0.8, -0.3}, {0.0, 0}}, wingth)
-	twing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.3}, {-0.3, 0.05}, {-0.3, 0}, {+0.3, 0}, {+0.3, 0.05}}, wingth)
-	vwing := NewGeometry_SolidFromFaceAndHeight([][3]float32{{0, 0.0}, {0.3, 0}, {0.3, 0.05}, {0, 0.3}}, wingth).Rotate([3]float32{0, 1, 0}, -90)
+	pbody := NewGeometrySolidFromCentersAndRadii(centers, radii, 8)
+	rwing := NewGeometrySolidFromFaceAndHeight([][3]float32{{0, 0.0}, {+0.8, -0.3}, {+0.8, -0.2}, {0, 0.4}}, wingth)
+	lwing := NewGeometrySolidFromFaceAndHeight([][3]float32{{0, 0.4}, {-0.8, -0.2}, {-0.8, -0.3}, {0.0, 0}}, wingth)
+	twing := NewGeometrySolidFromFaceAndHeight([][3]float32{{0, 0.3}, {-0.3, 0.05}, {-0.3, 0}, {+0.3, 0}, {+0.3, 0.05}}, wingth)
+	vwing := NewGeometrySolidFromFaceAndHeight([][3]float32{{0, 0.0}, {0.3, 0}, {0.3, 0.05}, {0, 0.3}}, wingth).Rotate([3]float32{0, 1, 0}, -90)
 	geometry := NewGeometry()
 	geometry.Merge(pbody.Rotate([3]float32{1, 0, 0}, -90))
 	geometry.Merge(rwing.Translate(0, 0.0, -wingth))
@@ -66,7 +67,7 @@ func NewSceneObject_Airplane(rc gigl.GLRenderingContext) *SceneObject {
 	geometry.Merge(vwing.Translate(wingth/2, -0.9, 0))
 	geometry.BuildNormalsForVertex()                               // prepare normal vectors
 	geometry.BuildDataBuffers(true, false, true)                   //
-	material, _ := rc.CreateMaterial("#ffff88")                    // create material
+	material := g2d.NewMaterialColors("#ffff88")                   // create material
 	shader := NewShader_NormalColor(rc)                            // use the standard NORMAL+COLOR shader
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 	return scnobj

@@ -8,28 +8,29 @@ import (
 
 func NewSceneObject_RedTriangle(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a red triangle with radius 0.5 at (0,0)
-	geometry := NewGeometry_Triangle(0.5)                  // create a triangle with radius 0.5 at (0,0)
-	geometry.BuildDataBuffers(true, false, true)           // build data buffers for vertices and faces
-	shader := NewShader_MaterialColor(rc)                  // create shader, and set its bindings
-	return NewSceneObject(geometry, nil, nil, nil, shader) // set up the scene object (draw FACES only)
+	geometry := NewGeometryTriangle(0.5)         // create a triangle with radius 0.5 at (0,0)
+	geometry.BuildDataBuffers(true, false, true) // build data buffers for vertices and faces
+	material := NewMaterialColors("#aa0000")
+	shader := NewShaderForMaterialColors(rc)                    // create shader, and set its bindings
+	return NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 }
 
 func NewSceneObject_HexagonWireframe(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates a hexagon with given color and radius 0.5 at (0,0), to be rendered as 'wireframe'
 	// (This example demonstrates how 'triangulation of face' works - for faces with more than 3 vertices)
-	geometry := NewGeometry_Polygon(6, 0.5, 30)                 // create a hexagon with radius 0.5, with 1st vertex at 30 degree from X axis
-	geometry.BuildDataBuffersForWireframe()                     // extract wireframe edges from faces
-	material, _ := rc.CreateMaterial("#888888")                 // create material
-	shader := NewShader_MaterialColor(rc)                       // create shader, and set its bindings
+	geometry := NewGeometryPolygon(6, 0.5, 30) // create a hexagon with radius 0.5, with 1st vertex at 30 degree from X axis
+	geometry.BuildDataBuffersForWireframe()    // extract wireframe edges from faces
+	material := NewMaterialColors("#888888")
+	shader := NewShaderForMaterialColors(rc)                    // create shader, and set its bindings
 	return NewSceneObject(geometry, material, nil, shader, nil) // set up the scene object (draw EDGES only)
 }
 
 func NewSceneObject_RectangleInstancesExample(rc gigl.GLRenderingContext) *SceneObject {
 	// This example creates 200*80 instances of a single geometry, each with its own position and color
-	geometry := NewGeometry_Rectangle(0.8)                         // create a rectangle of size 1.0
-	geometry.BuildDataBuffers(true, false, true)                   //
-	material, _ := rc.CreateMaterial("#888888")                    // create material
-	shader := NewShader_InstancePoseColor(rc)                      // create shader, and set its bindings
+	geometry := NewGeometryRectangle(0.8)        // create a rectangle of size 1.0
+	geometry.BuildDataBuffers(true, false, true) //
+	material := NewMaterialColors("#888888")
+	shader := NewShaderForInstancePoseColor(rc)                    // create shader, and set its bindings
 	scnobj := NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object (draw FACES only)
 	scnobj.SetInstanceBuffer(200*80, 5, nil)                       // multiple instances for 200*80 rectangles
 	for row := 0; row < 200; row++ {

@@ -6,7 +6,7 @@ import (
 
 var geometry_origin *Geometry // Geometry with only one vertex at (0,0)
 
-func NewGeometry_Origin() *Geometry {
+func NewGeometryOrigin() *Geometry {
 	if geometry_origin == nil { // A singlton is shared for all the uses
 		geometry_origin = NewGeometry().SetVertices([][2]float32{{0, 0}})
 		geometry_origin.BuildDataBuffers(true, false, false)
@@ -14,7 +14,7 @@ func NewGeometry_Origin() *Geometry {
 	return geometry_origin
 }
 
-func NewGeometry_Rectangle(size float32) *Geometry {
+func NewGeometryRectangle(size float32) *Geometry {
 	hs := size / 2
 	geometry := NewGeometry() // create an empty geometry
 	geometry.SetVertices([][2]float32{{-hs, -hs}, {hs, -hs}, {hs, hs}, {-hs, hs}})
@@ -23,13 +23,13 @@ func NewGeometry_Rectangle(size float32) *Geometry {
 	return geometry
 }
 
-func NewGeometry_Triangle(size float32) *Geometry {
-	geometry := NewGeometry_Polygon(3, size, -30) // 3 vertices and 1 triangular face
-	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})   // 1 edge connecting all the vertices
+func NewGeometryTriangle(size float32) *Geometry {
+	geometry := NewGeometryPolygon(3, size, -30) // 3 vertices and 1 triangular face
+	geometry.SetEdges([][]uint32{{0, 1, 2, 0}})  // 1 edge connecting all the vertices
 	return geometry
 }
 
-func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32) *Geometry {
+func NewGeometryPolygon(n int, radius float32, starting_angle_in_degree float32) *Geometry {
 	geometry := NewGeometry() // create an empty geometry
 	radian := float64(starting_angle_in_degree * (math.Pi / 180.0))
 	radian_step := (2 * math.Pi) / float64(n)
@@ -43,7 +43,7 @@ func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32
 	return geometry
 }
 
-func NewGeometry_Arrow() *Geometry {
+func NewGeometryArrow() *Geometry {
 	geometry := NewGeometry() // ARROW pointing left, with tip at (0,0) and length 1.0
 	geometry.SetVertices([][2]float32{{0, 0}, {0.5, -0.3}, {0.5, -0.15}, {1, -0.15}, {1, 0.15}, {0.5, 0.15}, {0.5, 0.3}})
 	geometry.SetFaces([][]uint32{{0, 1, 2, 3, 4, 5, 6}})
@@ -51,7 +51,7 @@ func NewGeometry_Arrow() *Geometry {
 	return geometry
 }
 
-func NewGeometry_ArrowHead() *Geometry {
+func NewGeometryArrowHead() *Geometry {
 	geometry := NewGeometry() // ARROW_HEAD pointing left, with tip at (0,0) and length 1.0
 	geometry.SetVertices([][2]float32{{0, 0}, {1, -0.6}, {1, +0.6}})
 	geometry.SetFaces([][]uint32{{0, 1, 2}})

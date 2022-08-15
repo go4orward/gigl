@@ -4,13 +4,12 @@ import (
 	"fmt"
 
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g2d/c2d"
 )
 
 type Scene struct {
 	bkgcolor [3]float32     // background color of the scene
 	objects  []*SceneObject // SceneObjects in the scene
-	bbox     [2][2]float32  // bounding box of all the SceneObjects
+	bbox     BBox           // bounding box of all the SceneObjects
 	overlays []Overlay      // list of Overlay layers (interface)
 }
 
@@ -18,7 +17,7 @@ func NewScene(bkg_color string) *Scene {
 	var scene Scene
 	scene.SetBkgColor(bkg_color)
 	scene.objects = make([]*SceneObject, 0)
-	scene.bbox = c2d.BBoxInit()
+	scene.bbox = *NewBBoxEmpty()
 	scene.overlays = make([]Overlay, 0)
 	return &scene
 }
@@ -32,7 +31,7 @@ func (self *Scene) String() string {
 // ----------------------------------------------------------------------------
 
 func (self *Scene) SetBkgColor(color string) *Scene {
-	rgba := common.ParseHexColor(color)
+	rgba := common.RGBAFromHexString(color)
 	self.bkgcolor = [3]float32{rgba[0], rgba[1], rgba[2]}
 	return self
 }
@@ -75,20 +74,20 @@ func (self *Scene) Get(indices ...int) *SceneObject {
 // Bounding Box
 // ----------------------------------------------------------------------------
 
-func (self *Scene) GetBoundingBox(renew bool) [2][2]float32 {
-	if !c2d.BBoxIsSet(self.bbox) || renew {
-		bbox := c2d.BBoxInit()
+func (self *Scene) GetBoundingBox(renew bool) *BBox {
+	if self.bbox.IsEmpty() || renew {
+		bbox := NewBBoxEmpty()
 		for _, sobj := range self.objects {
-			bbox = c2d.BBoxMerge(bbox, sobj.GetBoundingBox(nil, renew))
+			bbox.Merge(sobj.GetBoundingBox(nil, renew))
 		}
-		self.bbox = bbox
+		self.bbox = *bbox
 	}
-	return self.bbox
+	return &self.bbox
 }
 
 func (self *Scene) GetBBoxSizeCenter(renew bool) ([2][2]float32, [2]float32, [2]float32) {
-	bbox := self.GetBoundingBox(renew)
-	return bbox, c2d.BBoxSize(bbox), c2d.BBoxCenter(bbox)
+	self.GetBoundingBox(renew)
+	return self.bbox, self.bbox.Shape(), self.bbox.Center()
 }
 
 // ----------------------------------------------------------------------------

@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g2d/c2d"
 )
 
 type Camera struct {
@@ -20,7 +19,7 @@ type Camera struct {
 	// final Projection * View matrix
 	pjvwmatrix common.Matrix3 //
 	// Ref: http://www.songho.ca/opengl/gl_projectionmatrix.html
-	cbbox [2][2]float32 // camera bounding box
+	cbbox BBox // camera bounding box
 }
 
 func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *Camera {
@@ -28,18 +27,20 @@ func NewCamera(wh_aspect_ratio [2]int, fov_in_clipwidth float32, zoom float32) *
 	camera := Camera{wh: wh_aspect_ratio, fov: fov_in_clipwidth, zoom: zoom}
 	camera.update_proj_matrix()
 	camera.SetPose(0, 0, 0.0)
-	camera.cbbox = c2d.BBoxInit()
+	camera.cbbox = *NewBBoxEmpty()
 	return &camera
 }
 
-func (self *Camera) ShowInfo() {
+func (self *Camera) Summary() string {
 	p := self.projmatrix.GetElements() // Note that Matrix3 is column-major (just like WebGL)
 	v := self.viewmatrix.GetElements()
-	fmt.Printf("Camera  centered at [%5.2f %5.2f]\n", self.center[0], self.center[1])
-	fmt.Printf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f\n", self.wh[0], self.wh[1], self.fov, self.zoom)
-	fmt.Printf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[0], p[3], p[6], v[0], v[3], v[6])
-	fmt.Printf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[1], p[4], p[7], v[1], v[4], v[7])
-	fmt.Printf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[2], p[5], p[8], v[2], v[5], v[8])
+	summary := ""
+	summary += fmt.Sprintf("Camera  centered at [%5.2f %5.2f]\n", self.center[0], self.center[1])
+	summary += fmt.Sprintf("  Parameters : AspectRatio=[%d:%d]  fov=%.1f  zoom=%.2f\n", self.wh[0], self.wh[1], self.fov, self.zoom)
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[0], p[3], p[6], v[0], v[3], v[6])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[1], p[4], p[7], v[1], v[4], v[7])
+	summary += fmt.Sprintf("  [ %5.2f %5.2f %7.2f ] [ %5.2f %5.2f %7.2f ]\n", p[2], p[5], p[8], v[2], v[5], v[8])
+	return summary
 }
 
 // ----------------------------------------------------------------------------
@@ -135,7 +136,7 @@ func (self *Camera) SetBoundingBox(bbox [2][2]float32) *Camera {
 }
 
 func (self *Camera) ApplyBoundingBox(position bool, zoomlevel bool) *Camera {
-	if !c2d.BBoxIsSet(self.cbbox) {
+	if self.cbbox.IsEmpty() {
 		return self
 	}
 	if position { // check camera position

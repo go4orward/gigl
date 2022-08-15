@@ -10,5 +10,5 @@ type GLGeometry interface {
 	GetIdxBuffer(draw_mode int) []uint32   // data buffer of indices  (mode 2:for_edges, 3:for_faces)
 	GetVtxBufferInfo(draw_mode int) [5]int // data buffer info : [nverts, stride, xyz_size, uv_size, normal_size]
 	GetIdxBufferCount(draw_mode int) int   // data buffer count : number of vertex indices
-	ShowInfo()
+	Summary() string                       //
 }

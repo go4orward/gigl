@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g3d/c3d"
 )
 
 // ----------------------------------------------------------------------------
@@ -62,32 +61,34 @@ func (self *Geometry) String() string {
 	return fmt.Sprintf("3DGeometry{v:%d e:%d f:%d}\n", len(self.verts), len(self.faces), len(self.faces))
 }
 
-func (self *Geometry) ShowInfo() {
-	fmt.Printf("3DGeometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
+func (self *Geometry) Summary() string {
+	summary := ""
+	summary += fmt.Sprintf("3DGeometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
 	if len(self.tuvs) > 0 {
 		if self.HasTextureFor("VERTEX") {
-			fmt.Printf("    texture coords : [%d][]float32   for each vertex\n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords : [%d][]float32   for each vertex\n", len(self.tuvs))
 		} else if self.HasTextureFor("FACE") {
-			fmt.Printf("    texture coords : [%d][]float32   for each face\n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords : [%d][]float32   for each face\n", len(self.tuvs))
 		} else {
-			fmt.Printf("    texture coords : [%d][]float32   incomplete\n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords : [%d][]float32   incomplete\n", len(self.tuvs))
 		}
 	}
 	if len(self.norms) > 0 {
 		if self.HasNormalFor("VERTEX") {
-			fmt.Printf("    normal vectors : [%d][3]float32   for each vertex\n", len(self.norms))
+			summary += fmt.Sprintf("    normal vectors : [%d][3]float32   for each vertex\n", len(self.norms))
 		} else if self.HasNormalFor("FACE") {
-			fmt.Printf("    normal vectors : [%d][3]float32   for each face\n", len(self.norms))
+			summary += fmt.Sprintf("    normal vectors : [%d][3]float32   for each face\n", len(self.norms))
 		} else {
-			fmt.Printf("    normal vectors : [%d][3]float32   incomplete\n", len(self.norms))
+			summary += fmt.Sprintf("    normal vectors : [%d][3]float32   incomplete\n", len(self.norms))
 		}
 	}
-	fmt.Printf("    dbuffer_vpoint : %4d  pinfo=%v\n", len(self.dbuffer_vpoint)/self.dbuffer_vpoint_info[0], self.dbuffer_vpoint_info)
-	fmt.Printf("    dbuffer_fpoint : %4d  pinfo=%v\n", len(self.dbuffer_fpoint)/self.dbuffer_fpoint_info[0], self.dbuffer_fpoint_info)
-	fmt.Printf("    dbuffer_line   : %4d  \n", len(self.dbuffer_line))
-	fmt.Printf("    dbuffer_face   : %4d  \n", len(self.dbuffer_face))
-	// fmt.Printf("dbuffer_vpoint : %v\n", self.dbuffer_vpoint)
-	// fmt.Printf("dbuffer_fpoint : %v\n", self.dbuffer_fpoint)
+	summary += fmt.Sprintf("    dbuffer_vpoint : %4d  pinfo=%v\n", len(self.dbuffer_vpoint)/self.dbuffer_vpoint_info[0], self.dbuffer_vpoint_info)
+	summary += fmt.Sprintf("    dbuffer_fpoint : %4d  pinfo=%v\n", len(self.dbuffer_fpoint)/self.dbuffer_fpoint_info[0], self.dbuffer_fpoint_info)
+	summary += fmt.Sprintf("    dbuffer_line   : %4d  \n", len(self.dbuffer_line))
+	summary += fmt.Sprintf("    dbuffer_face   : %4d  \n", len(self.dbuffer_face))
+	// summary += fmt.Sprintf("dbuffer_vpoint : %v\n", self.dbuffer_vpoint)
+	// summary += fmt.Sprintf("dbuffer_fpoint : %v\n", self.dbuffer_fpoint)
+	return summary
 }
 
 // ----------------------------------------------------------------------------
@@ -270,9 +271,7 @@ func (self *Geometry) GetFaceNormal(fidx int) [3]float32 {
 	findices := self.faces[fidx]
 	i0, i1, i2 := findices[0], findices[1], findices[len(findices)-1]
 	v0, v1, v2 := self.verts[i0], self.verts[i1], self.verts[i2]
-	v01 := c3d.Normalize(c3d.SubAB(v1, v0))
-	v02 := c3d.Normalize(c3d.SubAB(v2, v0))
-	return c3d.Normalize(c3d.CrossAB(v01, v02))
+	return *NewV3dByFaceNormal(v0, v1, v2)
 }
 
 func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {
@@ -287,7 +286,7 @@ func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {
 				}
 			}
 		}
-		return c3d.Normalize(c3d.AverageAll(normals))
+		return *NewV3dByAvg(normals...)
 	} else {
 		neighbors := [][2]uint32{}
 		for _, face_vlist := range self.faces {
@@ -301,13 +300,13 @@ func (self *Geometry) GetVertexNormal(vidx int) [3]float32 {
 				}
 			}
 		}
-		cross_sum := [3]float32{0, 0, 0}
+		cross_sum := V3d{0, 0, 0}
 		for _, nv := range neighbors {
-			vnext := c3d.SubAB(self.verts[nv[0]], self.verts[vidx])
-			vprev := c3d.SubAB(self.verts[nv[1]], self.verts[vidx])
-			cross_sum = c3d.AddAB(cross_sum, c3d.CrossAB(vnext, vprev))
+			vnext := NewV3dBySub(self.verts[nv[0]], self.verts[vidx])
+			vprev := NewV3dBySub(self.verts[nv[1]], self.verts[vidx])
+			cross_sum.Add(vnext.Cross(vprev))
 		}
-		return c3d.Normalize(cross_sum)
+		return *cross_sum.Normalize()
 	}
 }
 
@@ -334,7 +333,7 @@ func (self *Geometry) splice_indices(a []uint32, pos int, delete_count int, new_
 	return append(append(head, new_entries...), tail...)
 }
 
-func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal [3]float32) [][]uint32 {
+func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal *V3d) [][]uint32 {
 	vindices := make([]uint32, len(face_vlist))
 	copy(vindices, face_vlist)
 	new_faces := make([][]uint32, 0)
@@ -343,10 +342,11 @@ func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal [3]floa
 	for vcount > 3 && iterations < max_iterations {
 		i0, i1, i2 := vidx, (vidx+1)%vcount, (vidx+2)%vcount
 		v0, v1, v2 := self.verts[vindices[i0]], self.verts[vindices[i1]], self.verts[vindices[i2]]
-		if c3d.DotAB(face_normal, c3d.CrossAB(c3d.SubAB(v1, v0), c3d.SubAB(v2, v0))) > 0 {
+		temp_normal := NewV3dByFaceNormal(v0, v1, v2)
+		if face_normal.Dot(temp_normal) > 0 {
 			point_inside := false
 			for j := 0; j < vcount; j++ {
-				if j != i0 && j != i1 && j != i2 && c3d.IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
+				if j != i0 && j != i1 && j != i2 && IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
 					point_inside = true
 					break
 				}
@@ -559,9 +559,9 @@ func (self *Geometry) BuildDataBuffers(for_points bool, for_lines bool, for_face
 		self.dbuffer_face = make([]uint32, triangle_count*3)
 		tpos := 0
 		for fidx, face := range self.faces { // []vidx
-			nv := self.GetFaceNormal(fidx)
-			triangles := self.get_triangulation(face, nv) // [][3]vidx
-			for _, triangle := range triangles {          // [3]vidx
+			nv := V3d(self.GetFaceNormal(fidx))
+			triangles := self.get_triangulation(face, &nv) // [][3]vidx
+			for _, triangle := range triangles {           // [3]vidx
 				if points_per_face { // vertex index has been changed due to PER_FACE duplication
 					vidx_stt := self.get_fpoint_new_vidx(fidx, 0)
 					self.dbuffer_face[tpos+0] = uint32(vidx_stt + find_index_in_face(triangle[0], face))
@@ -597,8 +597,8 @@ func (self *Geometry) BuildDataBuffersForWireframe() {
 	// create data buffer for edges, by extracting wireframe from faces
 	self.dbuffer_line = make([]uint32, 0)
 	for fidx, face := range self.faces {
-		normal := self.GetFaceNormal(fidx)
-		triangles := self.get_triangulation(face, normal)
+		normal := V3d(self.GetFaceNormal(fidx))
+		triangles := self.get_triangulation(face, &normal)
 		for _, t := range triangles {
 			self.dbuffer_line = append(self.dbuffer_line, t[0], t[1], t[1], t[2], t[2], t[0])
 		}

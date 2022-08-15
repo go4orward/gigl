@@ -19,5 +19,5 @@ type GLShader interface {
 	//
 	Copy() GLShader
 	String() string
-	ShowInfo()
+	Summary() string
 }

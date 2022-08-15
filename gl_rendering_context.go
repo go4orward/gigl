@@ -10,7 +10,8 @@ type GLRenderingContext interface {
 	GetEnvVariable(vname string, dtype string) interface{}
 
 	// Material
-	CreateMaterial(source string, options ...interface{}) (GLMaterial, error)
+	LoadMaterial(material GLMaterial) error
+
 	// Shader
 	CreateShader(vertex_shader string, fragment_shader string) (GLShader, error)
 	// DataBuffer

@@ -62,8 +62,8 @@ func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
 	return &self, nil
 }
 
-func (self *WebGLCanvas) GetGLRenderingContext() gigl.GLRenderingContext {
-	return self.rc
+func (self *WebGLCanvas) GetRenderingContext() gigl.GLRenderingContext {
+	return (self.rc)
 }
 
 func (self *WebGLCanvas) String() string {
@@ -72,6 +72,10 @@ func (self *WebGLCanvas) String() string {
 
 func (self *WebGLCanvas) GetWebGLRenderingContext() js.Value {
 	return self.rc.context
+}
+
+func (self *WebGLCanvas) GetWebGLConstants() gigl.GLConstants {
+	return self.rc.constants
 }
 
 func (self *WebGLCanvas) ConvertGoSliceToJsTypedArray(a interface{}) js.Value {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g2d/c2d"
 )
 
 type SceneObject struct {
@@ -19,7 +18,7 @@ type SceneObject struct {
 	UseDepth    bool            // depth test flag (default is true)
 	UseBlend    bool            // blending flag with alpha (default is false)
 	children    []*SceneObject  // OPTIONAL, children of this SceneObject (to be rendered recursively)
-	bbox        [2][2]float32   // bounding box
+	bbox        BBox            // bounding box
 	// multiple instance poses
 	instance_count  int       // number of instances
 	instance_stride int       // number of values of a single pose
@@ -44,34 +43,31 @@ func NewSceneObject(geometry *Geometry, material gigl.GLMaterial,
 	sobj.UseDepth = false // new drawings will overwrite old ones by default
 	sobj.UseBlend = false // alpha blending is turned off by default
 	sobj.children = nil   // OPTIONAL, only if current SceneObject has any child SceneObjects
-	sobj.bbox = c2d.BBoxInit()
+	sobj.bbox = *NewBBoxEmpty()
 	return &sobj
 }
 
-func (self *SceneObject) ShowInfo() {
-	fmt.Printf("SceneObject ")
-	self.Geometry.ShowInfo()
+func (self *SceneObject) Summary() string {
+	summary := "SceneObject "
+	summary += self.Geometry.Summary()
 	if self.instance_buffer != nil {
-		fmt.Printf("  Instance Poses : nposes=%d stride=%d\n", self.instance_count, self.instance_stride)
+		summary += fmt.Sprintf("  Instance Poses : nposes=%d stride=%d\n", self.instance_count, self.instance_stride)
 	}
 	if self.Material != nil {
-		fmt.Printf("  ")
-		self.Material.ShowInfo()
+		summary += fmt.Sprintf("  ") + self.Material.MaterialSummary()
 	}
 	if self.VShader != nil {
-		fmt.Printf("  VERT ")
-		self.VShader.ShowInfo()
+		summary += fmt.Sprintf("  VERT ") + self.VShader.Summary()
 	}
 	if self.EShader != nil {
-		fmt.Printf("  EDGE ")
-		self.EShader.ShowInfo()
+		summary += fmt.Sprintf("  EDGE ") + self.EShader.Summary()
 	}
 	if self.FShader != nil {
-		fmt.Printf("  FACE ")
-		self.FShader.ShowInfo()
+		summary += fmt.Sprintf("  FACE ") + self.FShader.Summary()
 	}
-	fmt.Printf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
-	fmt.Printf("  Children : %d\n", len(self.children))
+	summary += fmt.Sprintf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
+	summary += fmt.Sprintf("  Children : %d\n", len(self.children))
+	return summary
 }
 
 // ----------------------------------------------------------------------------
@@ -166,9 +162,9 @@ func (self *SceneObject) Scale(sx float32, sy float32) *SceneObject {
 // Bounding Box
 // ----------------------------------------------------------------------------
 
-func (self *SceneObject) GetBoundingBox(m *common.Matrix3, renew bool) [2][2]float32 {
-	if !c2d.BBoxIsSet(self.bbox) || renew {
-		bbox := c2d.BBoxInit()
+func (self *SceneObject) GetBoundingBox(m *common.Matrix3, renew bool) *BBox {
+	if self.bbox.IsEmpty() || renew {
+		bbox := NewBBoxEmpty()
 		// apply the transformation matrx
 		var mm *common.Matrix3 = nil
 		if m != nil {
@@ -179,25 +175,25 @@ func (self *SceneObject) GetBoundingBox(m *common.Matrix3, renew bool) [2][2]flo
 		// add all the vertices of the geometry
 		for _, v := range self.Geometry.verts {
 			xy := mm.MultiplyVector2(v)
-			c2d.BBoxAddPoint(&bbox, xy)
+			bbox.AddPoint(&xy)
 		}
 		if self.instance_count > 0 {
-			bbox_posed := c2d.BBoxInit()
+			bbox_posed := NewBBoxEmpty()
 			for i := 0; i < self.instance_count; i++ {
 				idx := i * self.instance_stride
 				txy := self.instance_buffer[idx : idx+2]
 				for k := 0; k < 2; k++ {
 					bboxp := [2]float32{bbox[k][0] + txy[0], bbox[k][1] + txy[1]}
 					bboxp = mm.MultiplyVector2(bboxp)
-					c2d.BBoxAddPoint(&bbox_posed, bboxp)
+					bbox_posed.AddPoint(&bboxp)
 				}
 			}
 			bbox = bbox_posed
 		}
 		for _, sobj := range self.children {
-			bbox = c2d.BBoxMerge(bbox, sobj.GetBoundingBox(mm, renew))
+			bbox.Merge(sobj.GetBoundingBox(mm, renew))
 		}
-		self.bbox = bbox
+		self.bbox = *bbox
 	}
-	return self.bbox
+	return &self.bbox
 }

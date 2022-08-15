@@ -79,16 +79,17 @@ type OverlayLabelLayer struct {
 	Labels []*OverlayLabel         //
 
 	// variables shared by all the labels
-	alphabet_geometry *Geometry       // geometry with single vertex at origin
-	alphabet_texture  gigl.GLMaterial // alphabet texture
-	alphabet_shader   gigl.GLShader   // label text shader
+	alphabet_geometry *Geometry                // geometry with single vertex at origin
+	alphabet_texture  *MaterialAlphabetTexture // alphabet texture
+	alphabet_shader   gigl.GLShader            // label text shader
 }
 
 func NewOverlayLabelLayer(rc gigl.GLRenderingContext, fontsize int, outlined bool) *OverlayLabelLayer {
 	self := OverlayLabelLayer{rc: rc} // let 'fontsize' of ALPHABET texture to be 20, by default
 	self.Labels = make([]*OverlayLabel, 0)
-	self.alphabet_geometry = NewGeometry_Origin() // trivial geometry with single vertex at origin
-	self.alphabet_texture, _ = self.rc.CreateMaterial("ALPHABET", "#ffffff", fontsize, outlined)
+	self.alphabet_geometry = NewGeometryOrigin() // trivial geometry with single vertex at origin
+	self.alphabet_texture = NewMaterialAlphabetTexture("Courier New", fontsize, "#ffffff", outlined)
+	self.rc.LoadMaterial(self.alphabet_texture)
 	self.alphabet_shader = nil
 	return &self
 }
@@ -110,17 +111,18 @@ func (self *OverlayLabelLayer) Render(pvm *common.Matrix3) {
 	}
 }
 
-func (self *OverlayLabelLayer) ShowInfo() {
-	fmt.Printf("OverlayLabelLayer\n")
-	fmt.Printf("  ALPHABET : ")
-	self.alphabet_texture.ShowInfo()
+func (self *OverlayLabelLayer) Summary() string {
+	summary := "OverlayLabelLayer\n"
+	summary += fmt.Sprintf("  ALPHABET : ")
+	summary += self.alphabet_texture.MaterialSummary()
 	for _, label := range self.Labels {
 		w, h := label.chwh[0], label.chwh[1]
 		offx, offy := label.offset[0], label.offset[1]
 		poses := fmt.Sprintf("%d instances", label.txtobj.instance_count)
-		fmt.Printf("  Label '%s' (%.0fx%.0f) %s %3.0fr [%.0f %.0f]off by '%s' %v\n",
+		summary += fmt.Sprintf("  Label '%s' (%.0fx%.0f) %s %3.0fr [%.0f %.0f]off by '%s' %v\n",
 			label.text, w, h, label.color, label.angle, offx, offy, label.offref, poses)
 	}
+	return summary
 }
 
 // ----------------------------------------------------------------------------
@@ -132,7 +134,6 @@ func (self *OverlayLabelLayer) AddLabel(labels ...*OverlayLabel) *OverlayLabelLa
 		label := labels[i]
 		if label.txtobj == nil && label.text != "" {
 			label.txtobj = self.build_labeltext_scene_object(label)
-			// label.txtobj.ShowInfo()
 		}
 		if label.bkgobj == nil && label.bkgtype != "" {
 			label.bkgobj = self.build_labelbkg_scene_object(label)
@@ -203,7 +204,7 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 		}`
 		var fragment_shader_code = `
 		precision mediump float;
-		uniform sampler2D texture;	// alphabet texture (ASCII characters from SPACE to DEL)
+		uniform sampler2D text;		// alphabet texture (ASCII characters from SPACE to DEL)
 		uniform   vec3 	whlen;		// character width & height, and label length
 		uniform   vec4  color;		// color of the label
 		varying   float v_code;     // character code (index of the character in the alphabet texture)
@@ -214,23 +215,23 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 			float u = uv[0] * (whlen[1]/whlen[0]) - 0.5, v = uv[1];
 			if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
 			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to alphabet_length)
-			gl_FragColor = texture2D(texture, uv) * color;
+			gl_FragColor = texture2D(text, uv) * color;
 		}`
 		self.alphabet_shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
 	}
 	shader := self.alphabet_shader.Copy()
 	offr := []float32{float32(label.offset[0]), float32(label.offset[1]), 0}
 	whlen := []float32{label.chwh[0], label.chwh[1], float32(self.alphabet_texture.GetAlaphabetLength())}
-	lrgba := common.ParseHexColor(label.color)                              // label color RGBA
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")              // Proj*View*Model matrix
-	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")           // AspectRatio
-	shader.SetBindingForUniform("orgn", "vec2", label.xy[:])                // label origin
-	shader.SetBindingForUniform("offr", "vec3", offr)                       // label offset & rotation
-	shader.SetBindingForUniform("whlen", "vec3", whlen)                     // ch_width, ch_height, alphabet_length
-	shader.SetBindingForUniform("color", "vec4", lrgba[:])                  // label color
-	shader.SetBindingForUniform("texture", "sampler2D", "material.texture") // texture sampler (unit:0)
-	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")        // point coordinates
-	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")     // character pose (:<stride>:<offset>)
+	lrgba := common.RGBAFromHexString(label.color)                       // label color RGBA
+	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
+	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")        // AspectRatio
+	shader.SetBindingForUniform("orgn", "vec2", label.xy[:])             // label origin
+	shader.SetBindingForUniform("offr", "vec3", offr)                    // label offset & rotation
+	shader.SetBindingForUniform("whlen", "vec3", whlen)                  // ch_width, ch_height, alphabet_length
+	shader.SetBindingForUniform("color", "vec4", lrgba[:])               // label color
+	shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")     // point coordinates
+	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")  // character pose (:<stride>:<offset>)
 	shader.CheckBindings()
 	scnobj := NewSceneObject(self.alphabet_geometry, self.alphabet_texture, shader, nil, nil) // shader for drawing POINTS (for each character)
 	// calculate the pose of each character (rune)
@@ -259,7 +260,7 @@ func (self *OverlayLabelLayer) build_labelbkg_scene_object(label *OverlayLabel) 
 	}
 	bkgtype0 := bkgtype_split[0]
 	geometry := NewGeometry()
-	material, _ := self.rc.CreateMaterial(bkgtype_split[1]) // GLMaterial from color string
+	material := NewMaterialColors(bkgtype_split[1]) // GLMaterial from color string
 	switch bkgtype0 {
 	case "box": // "box:#ffff00:#000000", "box:<FillColor>:<BorderColor>"
 		geometry.SetVertices([][2]float32{lbtm, rbtm, rtop, ltop})

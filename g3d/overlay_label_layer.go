@@ -78,16 +78,16 @@ type OverlayLabelLayer struct {
 	Labels []*OverlayLabel         //
 
 	// variables shared by all the labels
-	alphabet_geometry *g2d.Geometry   // geometry with single vertex at origin
-	alphabet_texture  gigl.GLMaterial // alphabet texture
-	alphabet_shader   gigl.GLShader   // label text shader
+	alphabet_geometry *g2d.Geometry                // geometry with single vertex at origin
+	alphabet_texture  *g2d.MaterialAlphabetTexture // alphabet texture
+	alphabet_shader   gigl.GLShader                // label text shader
 }
 
 func NewOverlayLabelLayer(rc gigl.GLRenderingContext, fontsize int, outlined bool) *OverlayLabelLayer {
 	self := OverlayLabelLayer{rc: rc} // let 'fontsize' of ALPHABET texture to be 20, by default
 	self.Labels = make([]*OverlayLabel, 0)
-	self.alphabet_geometry = g2d.NewGeometry_Origin() // trivial geometry with single vertex at origin
-	self.alphabet_texture, _ = rc.CreateMaterial("#ffffff", fontsize, outlined)
+	self.alphabet_geometry = g2d.NewGeometryOrigin() // trivial geometry with single vertex at origin
+	self.alphabet_texture = g2d.NewMaterialAlphabetTexture("Courier New", fontsize, "#ffffff", outlined)
 	self.alphabet_shader = nil
 	return &self
 }
@@ -184,7 +184,7 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 		}`
 		var fragment_shader_code = `
 		precision mediump float;
-		uniform sampler2D texture;	// alphabet texture (ASCII characters from SPACE to DEL)
+		uniform sampler2D text;		// alphabet texture (ASCII characters from SPACE to DEL)
 		uniform   vec3 	whlen;		// character width & height, and label length
 		uniform   vec4  color;		// color of the label
 		varying   float v_code;     // character code (index of the character in the alphabet texture)
@@ -195,14 +195,14 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 			float u = uv[0] * (whlen[1]/whlen[0]) - 0.5, v = uv[1];
 			if (u < 0.0 || u > 1.0 || v < 0.0 || v > 1.0) discard;
 			uv = vec2((u + v_code)/whlen[2], v);	// position in the texture (relative to alphabet_length)
-			gl_FragColor = texture2D(texture, uv) * color;
+			gl_FragColor = texture2D(text, uv) * color;
 		}`
 		self.alphabet_shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
 	}
 	shader := self.alphabet_shader.Copy()
 	offr := []float32{float32(label.offset[0]), float32(label.offset[1]), 0}
 	whlen := []float32{label.chwh[0], label.chwh[1], float32(self.alphabet_texture.GetAlaphabetLength())}
-	lrgba := common.ParseHexColor(label.color)                                                // label color RGBA
+	lrgba := common.RGBAFromHexString(label.color)                                            // label color RGBA
 	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")                              // Projection matrix
 	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")                              // View*Model matrix
 	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")                             // AspectRatio
@@ -210,7 +210,7 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 	shader.SetBindingForUniform("offr", "vec3", offr)                                         // label offset & rotation_angle
 	shader.SetBindingForUniform("whlen", "vec3", whlen)                                       // ch_width, ch_height, alphabet_length
 	shader.SetBindingForUniform("color", "vec4", lrgba[:])                                    // label color
-	shader.SetBindingForUniform("texture", "sampler2D", "material.texture")                   // texture sampler (unit:0)
+	shader.SetBindingForUniform("text", "sampler2D", "material.texture")                      // texture sampler (unit:0)
 	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")                          // point coordinates
 	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")                       // character pose (:<stride>:<offset>)
 	shader.CheckBindings()                                                                    // check validity of the shader
@@ -239,7 +239,7 @@ func (self *OverlayLabelLayer) build_labelbkg_scene_object(label *OverlayLabel) 
 	}
 	bkgtype0 := bkgtype_split[0]
 	geometry := g2d.NewGeometry()
-	material, _ := self.rc.CreateMaterial(bkgtype_split[1]) // Material from color string
+	material := g2d.NewMaterialColors(bkgtype_split[1]) // Material from color string
 	switch bkgtype0 {
 	case "box": // "box:#ffff00:#000000", "box:<FillColor>:<BorderColor>"
 		geometry.SetVertices([][2]float32{lbtm, rbtm, rtop, ltop})

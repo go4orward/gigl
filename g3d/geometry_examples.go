@@ -7,7 +7,7 @@ import (
 const InRadian = (math.Pi / 180.0)
 const InDegree = (180.0 / math.Pi)
 
-func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32) *Geometry {
+func NewGeometryPolygon(n int, radius float32, starting_angle_in_degree float32) *Geometry {
 	geometry := NewGeometry() // create an empty geometry
 	radian := float64(starting_angle_in_degree * (math.Pi / 180.0))
 	radian_step := (2 * math.Pi) / float64(n)
@@ -21,7 +21,7 @@ func NewGeometry_Polygon(n int, radius float32, starting_angle_in_degree float32
 	return geometry
 }
 
-func NewGeometry_Cube(xsize float32, ysize float32, zsize float32) *Geometry {
+func NewGeometryCube(xsize float32, ysize float32, zsize float32) *Geometry {
 	geometry := NewGeometry()
 	x, y, z := xsize/2, ysize/2, zsize/2
 	geometry.SetVertices([][3]float32{
@@ -32,14 +32,14 @@ func NewGeometry_Cube(xsize float32, ysize float32, zsize float32) *Geometry {
 	return geometry
 }
 
-func NewGeometry_CubeWithTexture(xsize float32, ysize float32, zsize float32) *Geometry {
-	geometry := NewGeometry_Cube(xsize, ysize, zsize)
+func NewGeometryCubeWithTexture(xsize float32, ysize float32, zsize float32) *Geometry {
+	geometry := NewGeometryCube(xsize, ysize, zsize)
 	geometry.SetTextureUVs([][]float32{
 		{0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}, {0, 1, 1, 1, 1, 0, 0, 0}})
 	return geometry
 }
 
-func NewGeometry_Sphere(radius float32, wsegs int, hsegs int) *Geometry {
+func NewGeometrySphere(radius float32, wsegs int, hsegs int) *Geometry {
 	//   Sphere with the minimum number of vertices (to be used with face normal vectors)
 	geometry := NewGeometry()
 	wnum, hnum := wsegs+1, hsegs+1
@@ -77,7 +77,7 @@ func NewGeometry_Sphere(radius float32, wsegs int, hsegs int) *Geometry {
 	return geometry
 }
 
-func NewGeometry_Cylinder(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
+func NewGeometryCylinder(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
 	geometry := NewGeometry()
 	rad_step := math.Pi * 2.0 / float64(nsides)
 	for i := 0; i < nsides; i++ {
@@ -101,7 +101,7 @@ func NewGeometry_Cylinder(nsides int, radius float32, height float32, stt_angle 
 	return geometry
 }
 
-func NewGeometry_Pyramid(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
+func NewGeometryPyramid(nsides int, radius float32, height float32, stt_angle float32, solid bool) *Geometry {
 	geometry := NewGeometry()
 	rad_step := math.Pi * 2.0 / float64(nsides)
 	apex := uint32(nsides)
@@ -123,7 +123,7 @@ func NewGeometry_Pyramid(nsides int, radius float32, height float32, stt_angle f
 	return geometry
 }
 
-func NewGeometry_SolidFromFaceAndHeight(face [][3]float32, height float32) *Geometry {
+func NewGeometrySolidFromFaceAndHeight(face [][3]float32, height float32) *Geometry {
 	geometry := NewGeometry()
 	flen := len(face)
 	btm_list, top_list := make([]uint32, flen), make([]uint32, flen)
@@ -140,7 +140,7 @@ func NewGeometry_SolidFromFaceAndHeight(face [][3]float32, height float32) *Geom
 	return geometry
 }
 
-func NewGeometry_SolidFromCentersAndRadii(centers [][3]float32, radii []float32, nsegments int) *Geometry {
+func NewGeometrySolidFromCentersAndRadii(centers [][3]float32, radii []float32, nsegments int) *Geometry {
 	geometry := NewGeometry()
 	nsides, astep := uint32(nsegments), math.Pi*2/float64(nsegments)
 	geometry.AddVertex(centers[0]) // bottom center
@@ -174,7 +174,7 @@ func NewGeometry_SolidFromCentersAndRadii(centers [][3]float32, radii []float32,
 	return geometry
 }
 
-func NewGeometry_EmptyExample() *Geometry {
+func NewGeometryEmptyExample() *Geometry {
 	geometry := NewGeometry()
 	geometry.SetVertices([][3]float32{{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}})
 	geometry.SetFaces([][]uint32{{0, 2, 1}, {0, 1, 3}, {1, 2, 3}, {2, 0, 3}})

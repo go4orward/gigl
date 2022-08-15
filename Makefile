@@ -1,46 +1,46 @@
-all: webgl_1st
+all: webgl_globe run_webgl
 
-webgl_1st: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_1st
-	cd examples; ./webgl_test_server
+webgl: webgl_1st webgl_2d webgl_2di webgl_3d webgl_3di webgl_globe webgl_server
 
-webgl_2d: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_2d
-	cd examples; ./webgl_test_server
+webgl_1st: 
+	cd tutorial/webgl_1st;    GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
 
-webgl_2di: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_2di
-	cd examples; ./webgl_test_server
+webgl_2d: 
+	cd tutorial/webgl_2d;     GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
 
-webgl_3d: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_3d
-	cd examples; ./webgl_test_server
+webgl_2di: 
+	cd tutorial/webgl_2di;    GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
 
-webgl_3di: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_3di
-	cd examples; ./webgl_test_server
+webgl_3d: 
+	cd tutorial/webgl_3d;     GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
 
-webgl_globe: webgl_server
-	cd examples; GOOS=js GOARCH=wasm go build -o ./webgl_test.wasm ./webgl_globe
-	cd examples; ./webgl_test_server
+webgl_3di: 
+	cd tutorial/webgl_3di;    GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
+
+webgl_globe: 
+	cd tutorial/webgl_globe;  GOOS=js GOARCH=wasm go build -o ../webgl_server/webgl_test.wasm .
 
 webgl_server: 
-	cd examples; go build -o ./webgl_test_server ./webgl_test_server.go
+	cd tutorial/webgl_server; go build -o ./webgl_test_server ./webgl_test_server.go
+
+run_webgl: webgl_server
+	cd tutorial/webgl_server; ./webgl_test_server
+
 
 opengl_1st: 
-	go run ./examples/opengl_1st/main.go
+	go run ./tutorial/opengl_1st/opengl_1st.go
 
 opengl_2d: 
-	go run ./examples/opengl_2d/main.go
+	go run ./tutorial/opengl_2d/opengl_2d.go
 
 opengl_2di: 
-	go run ./examples/opengl_2di/main.go
+	go run ./tutorial/opengl_2di/opengl_2di.go
 
 opengl_3d: 
-	go run ./examples/opengl_3d/main.go
+	go run ./tutorial/opengl_3d/opengl_3d.go
 
 opengl_globe: 
-	go run ./examples/opengl_globe/main.go
+	go run ./tutorial/opengl_globe/opengl_globe.go
 
 clean:
-	rm ./webgl_test.wasm ./webgl_test_server
+	rm tutorial/webgl_server/webgl_test.wasm tutorial/webgl_server/webgl_test_server

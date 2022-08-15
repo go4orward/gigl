@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/go4orward/gigl/common"
-	"github.com/go4orward/gigl/g2d/c2d"
 )
 
 // ----------------------------------------------------------------------------
@@ -60,23 +59,25 @@ func (self *Geometry) String() string {
 	return fmt.Sprintf("2DGeometry{v:%d e:%d f:%d}\n", len(self.verts), len(self.faces), len(self.faces))
 }
 
-func (self *Geometry) ShowInfo() {
-	fmt.Printf("2DGeometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
+func (self *Geometry) Summary() string {
+	summary := ""
+	summary += fmt.Sprintf("2DGeometry with %d verts %d edges %d faces\n", len(self.verts), len(self.edges), len(self.faces))
 	if len(self.tuvs) > 0 {
 		if self.HasTextureFor("VERTEX") {
-			fmt.Printf("    texture coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords   : [%d][]float32   for each vertex\n", len(self.tuvs))
 		} else if self.HasTextureFor("FACE") {
-			fmt.Printf("    texture coords   : [%d][]float32   for each face\n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords   : [%d][]float32   for each face\n", len(self.tuvs))
 		} else {
-			fmt.Printf("    texture coords   : [%d][]float32   \n", len(self.tuvs))
+			summary += fmt.Sprintf("    texture coords   : [%d][]float32   \n", len(self.tuvs))
 		}
 	}
-	fmt.Printf("    dbuffer_vpoint : %4d  pinfo=%v\n", len(self.dbuffer_vpoint), self.dbuffer_vpoint_info)
-	fmt.Printf("    dbuffer_fpoint : %4d  pinfo=%v\n", len(self.dbuffer_fpoint), self.dbuffer_fpoint_info)
-	fmt.Printf("    dbuffer_line   : %4d\n", len(self.dbuffer_line))
-	fmt.Printf("    dbuffer_face   : %4d\n", len(self.dbuffer_face))
-	// fmt.Printf("    dbuffer_vpoint : %v\n", self.dbuffer_vpoint)
-	// fmt.Printf("    dbuffer_fpoint : %v\n", self.dbuffer_fpoint)
+	summary += fmt.Sprintf("    dbuffer_vpoint : %4d  pinfo=%v\n", len(self.dbuffer_vpoint), self.dbuffer_vpoint_info)
+	summary += fmt.Sprintf("    dbuffer_fpoint : %4d  pinfo=%v\n", len(self.dbuffer_fpoint), self.dbuffer_fpoint_info)
+	summary += fmt.Sprintf("    dbuffer_line   : %4d\n", len(self.dbuffer_line))
+	summary += fmt.Sprintf("    dbuffer_face   : %4d\n", len(self.dbuffer_face))
+	// summary += fmt.Sprintf("    dbuffer_vpoint : %v\n", self.dbuffer_vpoint)
+	// summary += fmt.Sprintf("    dbuffer_fpoint : %v\n", self.dbuffer_fpoint)
+	return summary
 }
 
 // ----------------------------------------------------------------------------
@@ -248,10 +249,10 @@ func (self *Geometry) get_triangulation(face_vlist []uint32) [][]uint32 {
 	for vcount > 3 && iterations < max_iterations {
 		i0, i1, i2 := vidx, (vidx+1)%vcount, (vidx+2)%vcount
 		v0, v1, v2 := self.verts[vindices[i0]], self.verts[vindices[i1]], self.verts[vindices[i2]]
-		if c2d.IsCCW(v0, v1, v2) {
+		if IsCCW(v0, v1, v2) {
 			point_inside := false
 			for j := 0; j < vcount; j++ {
-				if j != i0 && j != i1 && j != i2 && c2d.IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
+				if j != i0 && j != i1 && j != i2 && IsPointInside(self.verts[vindices[j]], v0, v1, v2) {
 					point_inside = true
 					break
 				}

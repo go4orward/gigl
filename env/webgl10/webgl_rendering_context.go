@@ -111,12 +111,12 @@ func (self *WebGLRenderingContext) GetEnvVariable(vname string, dtype string) in
 // Material & Shader
 // ----------------------------------------------------------------------------
 
-func (self *WebGLRenderingContext) CreateMaterial(source string, options ...interface{}) (gigl.GLMaterial, error) {
-	return new_webgl_material(self, source, options...)
+func (self *WebGLRenderingContext) LoadMaterial(material gigl.GLMaterial) error {
+	return load_material(self, material)
 }
 
 func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
-	return new_webgl_shader(self, vertex_shader, fragment_shader)
+	return create_shader(self, vertex_shader, fragment_shader)
 }
 
 // ----------------------------------------------------------------------------

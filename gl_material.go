@@ -1,24 +1,24 @@
 package gigl
 
 type GLMaterial interface {
-	ShowInfo()
+	MaterialSummary() string
+}
 
-	// COLOR
-	SetColorForDrawMode(draw_mode int, color string) GLMaterial
-	SetDrawModeColor(draw_mode int, color [4]float32) GLMaterial
+type GLMaterialColors interface {
+	MaterialSummary() string
+
 	GetDrawModeColor(draw_mode int) [4]float32
+}
 
-	// TEXTURE
-	GetTexture() interface{}
+type GLMaterialTexture interface {
+	MaterialSummary() string
+
+	GetTexture() any
+	SetTexture(texture any)
 	GetTextureWH() [2]int
+	SetTextureWH(wh [2]int)
+	GetTextureRGB() [3]float32
+	SetTextureRGB(color any)
 	IsTextureReady() bool
 	IsTextureLoading() bool
-
-	// // Glow texture
-	InitializeGlowTexture(color string)
-	// // Alphabet texture
-	InitializeAlphabetTexture(color string, fontsize int, outlined bool)
-	GetAlaphabetLength() int
-	GetAlaphabetCharacterWH(scale float32) [2]float32
-	GetAlaphabetCharacterIndex(c rune) int
 }

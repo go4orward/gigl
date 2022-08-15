@@ -66,7 +66,7 @@ func (self *OverlayMarkerLayer) AddMarkersForTest() *OverlayMarkerLayer {
 	ahead2 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", false).Translate(40, 80)
 	ahead3 := self.CreateArrowHeadMarker(20, "#ffaaaa", "#ff0000", true)
 	ahead3.SetInstanceBuffer(4, 2, []float32{20, 90, 30, 90, 40, 90, 50, 90})
-	sprite := self.CreateSpriteMarker("/assets/map_marker.png", "#ff0000", [2]float32{20, 20}, "M_BTM", false)
+	sprite := self.CreateSpriteMarker("assets/map_marker.png", "#ff0000", [2]float32{20, 20}, "M_BTM", false)
 	return self.AddMarker(ahead1, ahead2, ahead3, sprite)
 }
 
@@ -75,20 +75,18 @@ func (self *OverlayMarkerLayer) AddMarkersForTest() *OverlayMarkerLayer {
 // ----------------------------------------------------------------------------
 
 func (self *OverlayMarkerLayer) CreateArrowMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
-	geometry := NewGeometry_Arrow().Scale(size, size) // 2D geometry of ARROW pointing left, with tip at (0,0)
-	geometry.BuildDataBuffers(true, true, true)       //    (marker size is 'size' in pixels)
-	material, _ := self.rc.CreateMaterial(color)      // material with basic color for faces
-	material.SetColorForDrawMode(2, outline_color)    //    (extra color added for edges)
+	geometry := NewGeometryArrow().Scale(size, size)                  // 2D geometry of ARROW pointing left, with tip at (0,0)
+	geometry.BuildDataBuffers(true, true, true)                       //    (marker size is 'size' in pixels)
+	material := NewMaterialColors(color, color, outline_color, color) // material with basic colors
 	shader := self.GetShaderForMarker(use_poses)
 	marker := NewSceneObject(geometry, material, nil, shader, shader)
 	return marker
 }
 
 func (self *OverlayMarkerLayer) CreateArrowHeadMarker(size float32, color string, outline_color string, use_poses bool) *SceneObject {
-	geometry := NewGeometry_ArrowHead().Scale(size, size) // 2D geometry of ARROW pointing left, with tip at (0,0)
-	geometry.BuildDataBuffers(true, true, true)           //    (marker size is 'size' in pixels)
-	material, _ := self.rc.CreateMaterial(color)          // material with basic color for faces
-	material.SetColorForDrawMode(2, outline_color)        //    (extra color added for edges)
+	geometry := NewGeometryArrowHead().Scale(size, size)              // 2D geometry of ARROW pointing left, with tip at (0,0)
+	geometry.BuildDataBuffers(true, true, true)                       //    (marker size is 'size' in pixels)
+	material := NewMaterialColors(color, color, outline_color, color) // material with basic colors
 	shader := self.GetShaderForMarker(use_poses)
 	marker := NewSceneObject(geometry, material, nil, shader, shader)
 	return marker
@@ -152,9 +150,10 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) gigl.GLShader
 // ----------------------------------------------------------------------------
 
 func (self *OverlayMarkerLayer) CreateSpriteMarker(imgpath string, color string, wh [2]float32, offref string, use_poses bool) *SceneObject {
-	geometry := NewGeometry_Origin() // geometry with only one vertex at (0,0)
-	material, _ := self.rc.CreateMaterial(imgpath)
-	material.SetColorForDrawMode(0, color)
+	geometry := NewGeometryOrigin() // geometry with only one vertex at (0,0)
+	material := NewMaterialTexture(imgpath, color)
+	self.rc.LoadMaterial(material)
+	// material.SetColorForDrawMode(0, color) // TODO(jichoi_22)
 	// wh := [2]float32{float32(material.GetTextureWH()[0]), float32(material.GetTextureWH()[1])}
 	var offrot [3]float32
 	switch offref {
@@ -206,7 +205,7 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 			}`
 		var fragment_shader_code = `
 			precision mediump float;
-			uniform sampler2D texture;	// alphabet texture (ASCII characters from SPACE to DEL)
+			uniform sampler2D text;		// alphabet texture (ASCII characters from SPACE to DEL)
 			uniform   vec4  color;		// color of the sprite
 			uniform   vec2  wh;			// size of the sprite
 			void main() {
@@ -218,16 +217,16 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 				}
 				if (uv[0] < 0.0 || uv[0] > 1.0) discard;
 				if (uv[1] < 0.0 || uv[1] > 1.0) discard;
-				gl_FragColor = texture2D(texture, uv) * color;
+				gl_FragColor = texture2D(text, uv) * color;
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")              // Proj*View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")           // AspectRatio
-		shader.SetBindingForUniform("wh", "vec2", wh[:])                        // sprite size
-		shader.SetBindingForUniform("offr", "vec3", offrot[:])                  // sprite offset & rotation angle
-		shader.SetBindingForUniform("color", "vec4", "material.color")          // color to be multiplied with sprite texture
-		shader.SetBindingForUniform("texture", "sampler2D", "material.texture") // texture sampler (unit:0)
-		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")        // offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
+		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")        // AspectRatio
+		shader.SetBindingForUniform("wh", "vec2", wh[:])                     // sprite size
+		shader.SetBindingForUniform("offr", "vec3", offrot[:])               // sprite offset & rotation angle
+		shader.SetBindingForUniform("color", "vec4", "material.color")       // color to be multiplied with sprite texture
+		shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")     // offset coordinates (in CAMERA space)
 	} else { // Shader for multiple instance poses ('ixy')
 		var vertex_shader_code = `
 			precision mediump float;
@@ -249,7 +248,7 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 			}`
 		var fragment_shader_code = `
 			precision mediump float;
-			uniform sampler2D texture;	// alphabet texture (ASCII characters from SPACE to DEL)
+			uniform sampler2D text;		// alphabet texture (ASCII characters from SPACE to DEL)
 			uniform   vec4  color;		// color of the sprite
 			uniform   vec2  wh;			// size of the sprite
 			void main() {
@@ -261,17 +260,17 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 				}
 				if (uv[0] < 0.0 || uv[0] > 1.0) discard;
 				if (uv[1] < 0.0 || uv[1] > 1.0) discard;
-				gl_FragColor = texture2D(texture, uv) * color;
+				gl_FragColor = texture2D(text, uv) * color;
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")              // Proj*View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")           // AspectRatio
-		shader.SetBindingForUniform("wh", "vec2", wh[:])                        // sprite size
-		shader.SetBindingForUniform("offr", "vec3", offrot[:])                  // sprite offset & rotation angle
-		shader.SetBindingForUniform("color", "vec4", "material.color")          // color to be multiplied with sprite texture
-		shader.SetBindingForUniform("texture", "sampler2D", "material.texture") // texture sampler (unit:0)
-		shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:2:0")       // sprite instance position (in WORLD XY)
-		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")        // offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
+		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")        // AspectRatio
+		shader.SetBindingForUniform("wh", "vec2", wh[:])                     // sprite size
+		shader.SetBindingForUniform("offr", "vec3", offrot[:])               // sprite offset & rotation angle
+		shader.SetBindingForUniform("color", "vec4", "material.color")       // color to be multiplied with sprite texture
+		shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
+		shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:2:0")    // sprite instance position (in WORLD XY)
+		shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")     // offset coordinates (in CAMERA space)
 	}
 	shader.CheckBindings() // check validity of the shader
 	return shader
