@@ -42,5 +42,9 @@ opengl_3d:
 opengl_globe: 
 	go run ./tutorial/opengl_globe/opengl_globe.go
 
+geometry_viewer:
+	mkdir -p build
+	cd tutorial/geometry_viewer; go build -o ../../build/geometry_viewer .
+
 clean:
 	rm tutorial/webgl_server/webgl_test.wasm tutorial/webgl_server/webgl_test_server

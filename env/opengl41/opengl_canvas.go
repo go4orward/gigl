@@ -119,10 +119,10 @@ func (self *OpenGLCanvas) RunOnce(draw_handler func(now float64)) {
 	}
 }
 
-func (self *OpenGLWindow) Pause() {
+func (self *OpenGLCanvas) Pause() {
 	self.paused = true
 }
 
-func (self *OpenGLWindow) Resume() {
+func (self *OpenGLCanvas) Resume() {
 	self.paused = false
 }
