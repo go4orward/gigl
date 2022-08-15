@@ -16,14 +16,15 @@ type OpenGLCanvas struct {
 	paused bool                    //
 }
 
+var glfw_initialized bool = false
 var gl_initialized bool = false
 
 func NewOpenGLCanvas(width int, height int, title string, resizable bool) (*OpenGLCanvas, error) {
-	if !gl_initialized {
+	if !glfw_initialized {
 		if err := glfw.Init(); err != nil {
 			log.Fatalln("failed to initialize glfw:", err)
 		}
-		gl_initialized = true
+		glfw_initialized = true
 	}
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
@@ -35,12 +36,17 @@ func NewOpenGLCanvas(width int, height int, title string, resizable bool) (*Open
 		return nil, err
 	}
 	window.MakeContextCurrent()
-	if err := gl.Init(); err != nil { // Initialize Glow
-		panic(err)
+	if !gl_initialized {
+		if err := gl.Init(); err != nil { // Initialize Glow
+			log.Fatalln("failed to initialize gl: ", err)
+		}
+		gl_initialized = true
 	}
+
 	// create WebGL context
 	self := OpenGLCanvas{window: window, wh: [2]int{width, height}}
 	self.rc = NewOpenGLRenderingContext(width, height)
+
 	return &self, nil
 }
 
