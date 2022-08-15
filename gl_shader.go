@@ -1,5 +1,7 @@
 package gigl
 
+type BindingType uint8
+
 type GLShader interface {
 	// Note that the creator NewShader() function should be implemented
 	//   for each environment (like NewWebGLShader()/NewOpenGLShader()).

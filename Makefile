@@ -1,4 +1,4 @@
-all: webgl_globe run_webgl
+all: webgl_globe webgl_run
 
 webgl: webgl_1st webgl_2d webgl_2di webgl_3d webgl_3di webgl_globe webgl_server
 
