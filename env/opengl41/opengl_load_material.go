@@ -47,7 +47,7 @@ func prepare_material_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialText
 		// get the pixel buffer, and the width & height of the texture
 		mtex.LoadTextureFromLocalFile(func(pixbuf []uint8, wh [2]int) {
 			var texture uint32
-			gl.GenTextures(1, &texture)   // This fails on different threads other than main thread.
+			gl.GenTextures(1, &texture)   // If gl functions run on different threads other than main, it fails.
 			gl.ActiveTexture(gl.TEXTURE0) // Therefore, LoadTextureFromLocalFile() cannot be asynchronous.
 			gl.BindTexture(c.TEXTURE_2D, texture)
 			gl.TexImage2D(c.TEXTURE_2D, 0, int32(c.RGBA), int32(wh[0]), int32(wh[1]), 0, c.RGBA, c.UNSIGNED_BYTE, gl.Ptr(pixbuf))
