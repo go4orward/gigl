@@ -13,7 +13,7 @@ type OpenGLCanvas struct {
 	wh     [2]int                  //
 	window *glfw.Window            //
 	rc     *OpenGLRenderingContext //
-
+	paused bool                    //
 }
 
 var gl_initialized bool = false
@@ -94,8 +94,9 @@ func (self *OpenGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h i
 
 func (self *OpenGLCanvas) Run(draw_handler func(now float64)) {
 	// run UI animation loop forever, with the given 'draw_handler'
+	self.paused = false
 	for !self.window.ShouldClose() {
-		if draw_handler != nil {
+		if draw_handler != nil && !self.paused {
 			now := glfw.GetTime()
 			draw_handler(now)
 			self.window.SwapBuffers()
@@ -116,4 +117,12 @@ func (self *OpenGLCanvas) RunOnce(draw_handler func(now float64)) {
 		}
 		glfw.PollEvents()
 	}
+}
+
+func (self *OpenGLWindow) Pause() {
+	self.paused = true
+}
+
+func (self *OpenGLWindow) Resume() {
+	self.paused = false
 }

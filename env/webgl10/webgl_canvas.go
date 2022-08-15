@@ -28,6 +28,7 @@ type WebGLCanvas struct {
 	evthandler_for_scroll      func(canvasxy [2]int, dx int, dy int, keystat [4]bool)
 	wasm_handler_for_draw      js.Func
 	user_handler_for_draw      func(now float64)
+	paused                     bool
 }
 
 func NewWebGLCanvas(canvas_id string) (*WebGLCanvas, error) {
@@ -188,7 +189,11 @@ func (self *WebGLCanvas) setup_mouse_wheel_common_handler() {
 		if keystat[3] { // ZOOM, if SHIFT is was pressed
 			if self.evthandler_for_zoom != nil {
 				cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
-				self.mouse_wheel_scale += float64(event.Get("deltaY").Int()) // [ 0 ~ 500(default) ~ 1000 ]
+				delta := float64(event.Get("deltaY").Int())
+				if math.Abs(delta) > 100 { // on Windows, mouse wheel delta is too big (+/-125)
+					delta = delta * 0.1
+				}
+				self.mouse_wheel_scale += delta // [ 0 ~ 500(default) ~ 1000 ]
 				self.mouse_wheel_scale = float64(math.Max(0, math.Min(self.mouse_wheel_scale, 1000)))
 				scale_exp := (self.mouse_wheel_scale - 500.0) / 250.0 // [ -2 ~ 0(default) ~ +2 ]
 				scale := math.Pow(10, scale_exp)                      // [ 0.01 ~ 1(default) ~ 100.0 ]
@@ -232,7 +237,8 @@ func (self *WebGLCanvas) SetEventHandlerForKeyPress(handler func(key string, cod
 		}
 		return nil
 	})
-	js.Global().Get("document").Call("addEventListener", "keypress", js_handler)
+	// js.Global().Get("document").Call("addEventListener", "keypress", js_handler)
+	js.Global().Get("document").Call("addEventListener", "keydown", js_handler) // ARROW keys are captured by 'keydown' only
 }
 
 func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h int)) {
@@ -255,10 +261,11 @@ func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h in
 
 func (self *WebGLCanvas) Run(draw_handler func(now float64)) {
 	// run UI animation loop forever, with the given 'draw_handler'
+	self.paused = false
 	if draw_handler != nil {
 		self.user_handler_for_draw = draw_handler
 		self.wasm_handler_for_draw = js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-			if self.user_handler_for_draw != nil {
+			if self.user_handler_for_draw != nil && !self.paused {
 				now := args[0].Float() // DOMHighResTimeStamp similar to performance.now()
 				self.user_handler_for_draw(now)
 			}
@@ -292,4 +299,12 @@ func (self *WebGLCanvas) RunOnce(draw_handler func(now float64)) {
 		js.Global().Call("requestAnimationFrame", self.wasm_handler_for_draw)
 	}
 	<-make(chan bool) // wait for events (without exiting)
+}
+
+func (self *WebGLCanvas) Pause() {
+	self.paused = true
+}
+
+func (self *WebGLCanvas) Resume() {
+	self.paused = false
 }

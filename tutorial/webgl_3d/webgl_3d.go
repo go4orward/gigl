@@ -52,8 +52,9 @@ func main() {
 		camera.SetAspectRatio(w, h)
 	})
 	canvas.SetEventHandlerForKeyPress(func(key string, code string, keystat [4]bool) {
-		if code == "Space" {
-			fmt.Printf("keypress : %v\n", code)
+		switch code {
+		default:
+			fmt.Printf("keypress : key='%v' code='%v'  keystat=%v\n", key, code, keystat)
 		}
 	})
 	fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
