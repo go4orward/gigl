@@ -42,7 +42,7 @@ $ make opengl_3d       # source : 'tutorial/opengl_3d/opengl_3d.go'
 ```
 ![webgl_3d_example result](tutorial/captured_images/xscreen_webgl3d.png)
 
-Spinnig Globe example: &emsp; _(with a specialized sphere geometry and glow effect)_
+Spinnig Globe example: &emsp; _(with a specialized sphere geometry, glow effect, and user interactions)_
 ```bash
 $ make webgl_globe    # source : 'tutorial/webgl_globe/webgl_globe.go'
 $ make run_webgl
