@@ -23,7 +23,7 @@ webgl_globe:
 webgl_server: 
 	cd tutorial/webgl_server; go build -o ./webgl_test_server ./webgl_test_server.go
 
-run_webgl: webgl_server
+webgl_run: webgl_server
 	cd tutorial/webgl_server; ./webgl_test_server
 
 

@@ -11,7 +11,7 @@ so that they can be easily used in any OpenGL/WebGL environments on native appli
 Simplest example: &emsp; _(for explaining how WebGL/OpenGL works)_
 ```bash
 $ make webgl_1st        # source : 'tutorial/webgl_1st/webgl_1st.go'
-$ make run_webgl
+$ make webgl_run
 or
 $ make opengl_1st       # source : 'tutorial/opengl_1st/opengl_1st.go'
 ```
@@ -20,7 +20,7 @@ $ make opengl_1st       # source : 'tutorial/opengl_1st/opengl_1st.go'
 2D example: &emsp; _(for basic 2D usage with Geometry)_
 ```bash
 $ make webgl_2d         # source : 'tutorial/webgl_2d/webgl_2d.go'
-$ make run_webgl
+$ make webgl_run
 or
 $ make opengl_2d        # source : 'tutorial/opengl_2d/opengl_2d.go'
 ```
@@ -29,14 +29,14 @@ $ make opengl_2d        # source : 'tutorial/opengl_2d/opengl_2d.go'
 2Di example: &emsp; _(with Geometry Instaces, Labels & Markers)_
 ```bash
 $ make webgl_2di        # source : 'tutorial/webgl_2di/webgl_2di.go'
-$ make run_webgl
+$ make webgl_run
 ```
 ![webgl_2d_example result](tutorial/captured_images/xscreen_webgl2di.png)
 
 3D example: &emsp; _(basic 3D usage with Geometry, Texture and Camera)_
 ```bash
 $ make webgl_3d        # source : 'tutorial/webgl_3d/webgl_3d.go'
-$ make run_webgl
+$ make webgl_run
 or
 $ make opengl_3d       # source : 'tutorial/opengl_3d/opengl_3d.go'
 ```
@@ -45,7 +45,7 @@ $ make opengl_3d       # source : 'tutorial/opengl_3d/opengl_3d.go'
 Spinnig Globe example: &emsp; _(with a specialized sphere geometry, glow effect, and user interactions)_
 ```bash
 $ make webgl_globe    # source : 'tutorial/webgl_globe/webgl_globe.go'
-$ make run_webgl
+$ make webgl_run
 ```
 ![webgl_globe_example result](tutorial/captured_images/xscreen_webglglobe.png)
 
