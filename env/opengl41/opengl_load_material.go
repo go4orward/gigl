@@ -91,5 +91,5 @@ func prepare_material_glow_texture(rc *OpenGLRenderingContext, mtex *g2d.Materia
 // ----------------------------------------------------------------------------
 
 func prepare_material_alphabet_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialAlphabetTexture) {
-	// TODO(jichoi_22)
+	// TODO(go4orward)
 }

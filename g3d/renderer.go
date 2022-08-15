@@ -158,7 +158,7 @@ func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj 
 	// 2. bind the uniforms of the shader program
 	for uname, umap := range shader.GetUniformBindings() {
 		if err := self.bind_uniform(uname, umap, draw_mode, scnobj, proj, vwmd); err != nil {
-			if err.Error() != "MaterialTexture is not ready" { // TODO(jichoi_22)
+			if err.Error() != "MaterialTexture is not ready" { // TODO(go4orward)
 				fmt.Println(err.Error())
 			}
 			return err

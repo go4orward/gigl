@@ -153,7 +153,7 @@ func (self *OverlayMarkerLayer) CreateSpriteMarker(imgpath string, color string,
 	geometry := NewGeometryOrigin() // geometry with only one vertex at (0,0)
 	material := NewMaterialTexture(imgpath, color)
 	self.rc.LoadMaterial(material)
-	// material.SetColorForDrawMode(0, color) // TODO(jichoi_22)
+	// material.SetColorForDrawMode(0, color) // TODO(go4orward)
 	// wh := [2]float32{float32(material.GetTextureWH()[0]), float32(material.GetTextureWH()[1])}
 	var offrot [3]float32
 	switch offref {

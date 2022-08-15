@@ -32,10 +32,10 @@ func main() {
 		geometry = g3d.NewGeometryCylinder(8, 1.0, 3.0, 0, true)
 	default:
 		geometry = g3d.NewGeometryCylinder(8, 1.0, 3.0, 0, true)
-		// TODO(jichoi) - load models from OBJ or STL file format
+		// TODO(go4orward) - load models from OBJ or STL file format
 	}
 
-	// TODO(jichoi) - crashes on OpenGL on Mac
+	// TODO(go4orward) - crashes on OpenGL on Mac
 
 	canvas, err := opengl.NewOpenGLCanvas(800, 600, "Geometry Viewer", false)
 	if err != nil {
