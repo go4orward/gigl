@@ -15,7 +15,7 @@ $ make run_webgl
 or
 $ make opengl_1st       # source : 'tutorial/opengl_1st/opengl_1st.go'
 ```
-![webgl_1st_example result](tutorial/captured/xscreen_webgl1st.png)
+![webgl_1st_example result](tutorial/captured_images/xscreen_webgl1st.png)
 
 2D example: &emsp; _(for basic 2D usage with Geometry)_
 ```bash
@@ -24,14 +24,14 @@ $ make run_webgl
 or
 $ make opengl_2d        # source : 'tutorial/opengl_2d/opengl_2d.go'
 ```
-![webgl_2d_example result](tutorial/captured/xscreen_webgl2d.png)
+![webgl_2d_example result](tutorial/captured_images/xscreen_webgl2d.png)
 
 2Di example: &emsp; _(with Geometry Instaces, Labels & Markers)_
 ```bash
 $ make webgl_2di        # source : 'tutorial/webgl_2di/webgl_2di.go'
 $ make run_webgl
 ```
-![webgl_2d_example result](tutorial/captured/xscreen_webgl2di.png)
+![webgl_2d_example result](tutorial/captured_images/xscreen_webgl2di.png)
 
 3D example: &emsp; _(basic 3D usage with Geometry, Texture and Camera)_
 ```bash
@@ -40,14 +40,14 @@ $ make run_webgl
 or
 $ make opengl_3d       # source : 'tutorial/opengl_3d/opengl_3d.go'
 ```
-![webgl_3d_example result](tutorial/captured/xscreen_webgl3d.png)
+![webgl_3d_example result](tutorial/captured_images/xscreen_webgl3d.png)
 
 Globe example: &emsp; _(with a specialized sphere and glow effect for the Globe)_
 ```bash
 $ make webgl_globe    # source : 'tutorial/webgl_globe/webgl_globe.go'
 $ make run_webgl
 ```
-![webgl_globe_example result](tutorial/captured/xscreen_webglglobe.png)
+![webgl_globe_example result](tutorial/captured_images/xscreen_webglglobe.png)
 
 ## ToDo List
 
