@@ -115,6 +115,10 @@ func (self *WebGLRenderingContext) LoadMaterial(material gigl.GLMaterial) error 
 	return load_material(self, material)
 }
 
+func (self *WebGLRenderingContext) SetupMaterial(material gigl.GLMaterial) error {
+	return setup_material(self, material)
+}
+
 func (self *WebGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
 	return create_shader(self, vertex_shader, fragment_shader)
 }

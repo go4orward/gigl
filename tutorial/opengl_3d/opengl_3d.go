@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/go4orward/gigl/common"
 	opengl "github.com/go4orward/gigl/env/opengl41"
 	"github.com/go4orward/gigl/g2d"
 	"github.com/go4orward/gigl/g3d"
@@ -14,8 +15,17 @@ func init() { // This is needed to let main() run on the startup thread.
 	runtime.LockOSThread() // Ref: https://golang.org/pkg/runtime/#LockOSThread
 }
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
-	canvas, err := opengl.NewOpenGLCanvas(800, 600, "OpenGL3D: Rectangle with Gopher Texture Image", false)
+	cfg := Config{loglevel: "info", logfilter: ""}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
+	}
+	canvas, err := opengl.NewOpenGLCanvas(1200, 900, "OpenGL3D: Rectangle with Gopher Texture Image", false)
 	if err != nil {
 		log.Fatal(errors.New("Failed to create OpenGL canvas : " + err.Error()))
 	}

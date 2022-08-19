@@ -7,45 +7,46 @@ import (
 )
 
 func load_material(rc *OpenGLRenderingContext, material gigl.GLMaterial) error {
+	c := rc.GetConstants()
 	switch material.(type) {
 	case *g2d.MaterialColors:
-		prepare_material_colors(rc, material.(*g2d.MaterialColors))
+		// DO NOTHING
 	case *g2d.MaterialTexture:
-		prepare_material_texture(rc, material.(*g2d.MaterialTexture))
+		mtex := material.(*g2d.MaterialTexture)
+		if !mtex.IsReady() && !mtex.IsLoaded() && !mtex.IsLoading() {
+			if false {
+				// set up a temporary texture (single pixel with CYAN colar)
+				var texture uint32
+				gl.GenTextures(1, &texture) // uint32, with non-zero values
+				gl.BindTexture(c.TEXTURE_2D, texture)
+				gl.TexImage2D(c.TEXTURE_2D, 0, int32(c.RGBA), 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, gl.Ptr([]uint8{0, 255, 255, 255}))
+				mtex.SetTexture(texture)
+				// common.Logger.Trace("Texture : %v (%T)\n", self.texture, self.texture)
+			}
+			// get the pixel buffer, and the width & height of the texture
+			mtex.LoadTextureFromLocalFile()
+		}
 	case *g2d.MaterialGlowTexture:
-		prepare_material_glow_texture(rc, material.(*g2d.MaterialGlowTexture))
+		mtex := material.(*g2d.MaterialGlowTexture)
+		if !mtex.IsReady() && !mtex.IsLoaded() {
+			// get the pixel buffer, and the width & height of the texture
+			mtex.LoadGlowTexture()
+		}
 	case *g2d.MaterialAlphabetTexture:
 		prepare_material_alphabet_texture(rc, material.(*g2d.MaterialAlphabetTexture))
 	}
 	return nil
 }
 
-// ----------------------------------------------------------------------------
-// Material Colors
-// ----------------------------------------------------------------------------
-
-func prepare_material_colors(rc *OpenGLRenderingContext, mcolor *g2d.MaterialColors) {
-	// Nothing to be done
-}
-
-// ----------------------------------------------------------------------------
-// Material Texture
-// ----------------------------------------------------------------------------
-
-func prepare_material_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialTexture) {
+func setup_material(rc *OpenGLRenderingContext, material gigl.GLMaterial) error {
 	c := rc.GetConstants()
-	if !mtex.IsTextureReady() && !mtex.IsTextureLoading() {
-		if true {
-			// set up a temporary texture (single pixel with CYAN colar)
-			var texture uint32
-			gl.GenTextures(1, &texture) // uint32, with non-zero values
-			gl.BindTexture(c.TEXTURE_2D, texture)
-			gl.TexImage2D(c.TEXTURE_2D, 0, int32(c.RGBA), 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, gl.Ptr([]uint8{0, 255, 255, 255}))
-			mtex.SetTexture(texture)
-			// fmt.Printf("Texture : %v (%T)\n", self.texture, self.texture)
-		}
-		// get the pixel buffer, and the width & height of the texture
-		mtex.LoadTextureFromLocalFile(func(pixbuf []uint8, wh [2]int) {
+	switch material.(type) {
+	case *g2d.MaterialColors:
+		// DO NOTHING
+	case *g2d.MaterialTexture:
+		mtex := material.(*g2d.MaterialTexture)
+		if !mtex.IsReady() && mtex.IsLoaded() {
+			pixbuf, wh := mtex.GetTexturePixbuf(), mtex.GetTextureWH()
 			var texture uint32
 			gl.GenTextures(1, &texture)   // If gl functions run on different threads other than main, it fails.
 			gl.ActiveTexture(gl.TEXTURE0) // Therefore, LoadTextureFromLocalFile() cannot be asynchronous.
@@ -60,19 +61,11 @@ func prepare_material_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialText
 				// gl.TexParameteri(c.TEXTURE_2D, c.TEXTURE_MAG_FILTER, int32(c.LINEAR))
 			}
 			mtex.SetTexture(texture)
-		})
-	}
-}
-
-// ----------------------------------------------------------------------------
-// Material Glow Texture
-// ----------------------------------------------------------------------------
-
-func prepare_material_glow_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialGlowTexture) {
-	c := rc.GetConstants()
-	if !mtex.IsTextureReady() {
-		// get the pixel buffer, and the width & height of the texture
-		mtex.LoadTexture(func(pixbuf []uint8, wh [2]int) {
+		}
+	case *g2d.MaterialGlowTexture:
+		mtex := material.(*g2d.MaterialGlowTexture)
+		if !mtex.IsReady() && mtex.IsLoaded() {
+			pixbuf, wh := mtex.GetTexturePixbuf(), mtex.GetTextureWH()
 			var texture uint32
 			gl.GenTextures(1, &texture)
 			gl.BindTexture(c.TEXTURE_2D, texture)
@@ -82,8 +75,11 @@ func prepare_material_glow_texture(rc *OpenGLRenderingContext, mtex *g2d.Materia
 			gl.TexParameteri(c.TEXTURE_2D, c.TEXTURE_MIN_FILTER, int32(c.LINEAR))
 			// gl.TexParameteri(c.TEXTURE_2D, c.TEXTURE_MAG_FILTER, int32(c.LINEAR))
 			mtex.SetTexture(texture)
-		})
+		}
+	case *g2d.MaterialAlphabetTexture:
+		prepare_material_alphabet_texture(rc, material.(*g2d.MaterialAlphabetTexture))
 	}
+	return nil
 }
 
 // ----------------------------------------------------------------------------

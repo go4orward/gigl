@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/go4orward/gigl/common"
 	opengl "github.com/go4orward/gigl/env/opengl41"
 	"github.com/go4orward/gigl/g2d"
 )
@@ -13,8 +14,17 @@ func init() { // This is needed to let main() run on the startup thread.
 	runtime.LockOSThread() // Ref: https://golang.org/pkg/runtime/#LockOSThread
 }
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
-	canvas, err := opengl.NewOpenGLCanvas(800, 600, "OpenGL2D: Triangle in World Space", false)
+	cfg := Config{loglevel: "info", logfilter: ""}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
+	}
+	canvas, err := opengl.NewOpenGLCanvas(1200, 900, "OpenGL2D: Triangle in World Space", false)
 	if err != nil {
 		log.Fatal(errors.New("Failed to create OpenGL canvas : " + err.Error()))
 	}
@@ -25,7 +35,7 @@ func main() {
 	mcolors := g2d.NewMaterialColors("#bbbbff", "#bbbbff", "#0000ff") // create material (with light-blue color)
 	shader := g2d.NewShaderForMaterialColors(rc)                      // shader with auto-binded color & PVM matrix
 	scnobj := g2d.NewSceneObject(geometry, mcolors, nil, shader, shader).Rotate(40)
-	scene := g2d.NewScene("#000000").Add(scnobj)  // scene holds all the SceneObjects to be rendered
+	scene := g2d.NewScene("#ffffff").Add(scnobj)  // scene holds all the SceneObjects to be rendered
 	camera := g2d.NewCamera(canvas.GetWH(), 2, 1) // FOV 2 means range of [-1,+1] in X, ZoomLevel is 1.0
 	renderer := g2d.NewRenderer(rc)               // set up the renderer
 

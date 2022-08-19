@@ -204,7 +204,7 @@ func (self *Geometry) HasTextureFor(mode string) bool {
 
 func (self *Geometry) AddTextureUV(tuv []float32) *Geometry {
 	if len(tuv) == 0 || len(tuv)%2 == 0 {
-		fmt.Printf("Invalid texture coordinates to add : %v\n", tuv)
+		common.Logger.Error("Invalid texture coordinates to add : %v\n", tuv)
 		return self
 	}
 	self.tuvs = append(self.tuvs, tuv)
@@ -215,7 +215,7 @@ func (self *Geometry) SetTextureUVs(tuvs [][]float32) *Geometry {
 	if len(tuvs) == len(self.faces) && len(tuvs[0]) >= 6 { // texture for each face
 	} else if len(tuvs) == len(self.verts) && len(tuvs[0]) == 2 { // texture for each vertex
 	} else {
-		fmt.Printf("Invalid texture UVs : %v\n", tuvs)
+		common.Logger.Error("Invalid texture UVs : %v\n", tuvs)
 		return self
 	}
 	self.tuvs = tuvs
@@ -268,7 +268,7 @@ func (self *Geometry) get_triangulation(face_vlist []uint32) [][]uint32 {
 	}
 	new_faces = append(new_faces, vindices)
 	if iterations == max_iterations {
-		fmt.Printf("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
+		common.Logger.Error("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
 	}
 	return new_faces
 }

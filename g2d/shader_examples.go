@@ -2,6 +2,7 @@ package g2d
 
 import (
 	"github.com/go4orward/gigl"
+	cst "github.com/go4orward/gigl/common/constants"
 )
 
 func NewShaderFor2DAxes(rc gigl.GLRenderingContext) gigl.GLShader {
@@ -25,9 +26,9 @@ func NewShaderFor2DAxes(rc gigl.GLRenderingContext) gigl.GLShader {
 			else               gl_FragColor = vec4(0.1, 1.0, 0.1, 1.0);
 		}`
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")      // Proj*View*Model matrix
-	shader.SetBindingForAttribute("axy", "vec2", "geometry.coords") // point coordinates
-	shader.CheckBindings()                                          // check validity of the shader
+	shader.SetBindingForUniform(cst.Mat3, "pvm", "renderer.pvm")      // Proj*View*Model matrix
+	shader.SetBindingForAttribute(cst.Vec2, "axy", "geometry.coords") // point coordinates
+	shader.CheckBindings()                                            // check validity of the shader
 	return shader
 }
 
@@ -48,10 +49,10 @@ func NewShaderForMaterialColors(rc gigl.GLRenderingContext) gigl.GLShader {
 			gl_FragColor = color;
 		}`
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")     // Proj*View*Model matrix
-	shader.SetBindingForUniform("color", "vec4", "material.color") // material color
-	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords") // point coordinates
-	shader.CheckBindings()                                         // check validity of the shader
+	shader.SetBindingForUniform(cst.Mat3, "pvm", "renderer.pvm")     // Proj*View*Model matrix
+	shader.SetBindingForUniform(cst.Vec4, "color", "material.color") // material color
+	shader.SetBindingForAttribute(cst.Vec2, "xy", "geometry.coords") // point coordinates
+	shader.CheckBindings()                                           // check validity of the shader
 	return shader
 }
 
@@ -76,11 +77,11 @@ func NewShaderForMaterialTexture(rc gigl.GLRenderingContext) gigl.GLShader {
 			gl_FragColor = texture2D(text, v_uv);
 		}`
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
-	shader.SetBindingForUniform("text", "sampler2D", "material.texture") // texture sampler (unit:0)
-	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords")       // point coordinates
-	shader.SetBindingForAttribute("uv", "vec2", "geometry.textuv")       // texture UV coordinates
-	shader.CheckBindings()                                               // check validity of the shader
+	shader.SetBindingForUniform(cst.Mat3, "pvm", "renderer.pvm")           // Proj*View*Model matrix
+	shader.SetBindingForUniform(cst.Sampler2D, "text", "material.texture") // texture sampler (unit:0)
+	shader.SetBindingForAttribute(cst.Vec2, "xy", "geometry.coords")       // point coordinates
+	shader.SetBindingForAttribute(cst.Vec2, "uv", "geometry.textuv")       // texture UV coordinates
+	shader.CheckBindings()                                                 // check validity of the shader
 	return shader
 }
 
@@ -105,10 +106,10 @@ func NewShaderForInstancePoseColor(rc gigl.GLRenderingContext) gigl.GLShader {
 			gl_FragColor = vec4(v_color, 1.0);
 		}`
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("pvm", "mat3", "renderer.pvm")           // Proj*View*Model matrix
-	shader.SetBindingForAttribute("xy", "vec2", "geometry.coords")       // point coordinates
-	shader.SetBindingForAttribute("ixy", "vec2", "instance.pose:5:0")    // instance pose (XY coordinates)
-	shader.SetBindingForAttribute("icolor", "vec3", "instance.pose:5:2") // instance color (RGB packed in single float32)
-	shader.CheckBindings()                                               // check validity of the shader
+	shader.SetBindingForUniform(cst.Mat3, "pvm", "renderer.pvm")           // Proj*View*Model matrix
+	shader.SetBindingForAttribute(cst.Vec2, "xy", "geometry.coords")       // point coordinates
+	shader.SetBindingForAttribute(cst.Vec2, "ixy", "instance.pose:5:0")    // instance pose (XY coordinates)
+	shader.SetBindingForAttribute(cst.Vec3, "icolor", "instance.pose:5:2") // instance color (RGB packed in single float32)
+	shader.CheckBindings()                                                 // check validity of the shader
 	return shader
 }

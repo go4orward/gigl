@@ -10,46 +10,49 @@ import (
 )
 
 func load_material(rc *WebGLRenderingContext, material gigl.GLMaterial) error {
+	// Load material data from local file or remote server
+	context, c := rc.context, rc.GetConstants()
 	switch material.(type) {
 	case *g2d.MaterialColors:
-		prepare_material_colors(rc, material.(*g2d.MaterialColors))
+		// DO NOTHING
 	case *g2d.MaterialTexture:
-		prepare_material_texture(rc, material.(*g2d.MaterialTexture))
+		mtex := material.(*g2d.MaterialTexture)
+		if !mtex.IsReady() && !mtex.IsLoaded() && !mtex.IsLoading() {
+			if false {
+				// set up a temporary texture (single pixel with CYAN colar)
+				mtex.SetTexture(context.Call("createTexture"))
+				// js_texture_unit := js.ValueOf(js.ValueOf(self.constants.TEXTURE0 + uint32(texture_unit)))
+				context.Call("activeTexture", js.ValueOf(c.TEXTURE0))
+				context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), mtex.GetTexture())
+				// context.TexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, []uint8{0, 255, 255, 255})
+				js_buffer := rc.ConvertGoSliceToJsTypedArray([]uint8{0, 255, 255, 255})
+				context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), 1, 1, 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
+			}
+			// get the pixel buffer, and the width & height of the texture
+			mtex.LoadTextureFromRemoteServer()
+		}
 	case *g2d.MaterialGlowTexture:
-		prepare_material_glow_texture(rc, material.(*g2d.MaterialGlowTexture))
+		mtex := material.(*g2d.MaterialGlowTexture)
+		if !mtex.IsReady() && !mtex.IsLoaded() {
+			// get the pixel buffer, and the width & height of the texture
+			mtex.LoadGlowTexture()
+		}
 	case *g2d.MaterialAlphabetTexture:
 		prepare_material_alphabet_texture(rc, material.(*g2d.MaterialAlphabetTexture))
 	}
 	return nil
 }
 
-// ----------------------------------------------------------------------------
-// COLOR
-// ----------------------------------------------------------------------------
-
-func prepare_material_colors(rc *WebGLRenderingContext, mcolor *g2d.MaterialColors) {
-	// Nothing to be done
-}
-
-// ----------------------------------------------------------------------------
-// TEXTURE
-// ----------------------------------------------------------------------------
-
-func prepare_material_texture(rc *WebGLRenderingContext, mtex *g2d.MaterialTexture) {
+func setup_material(rc *WebGLRenderingContext, material gigl.GLMaterial) error {
+	// Setup material using pre-loaded material data
 	context, c := rc.context, rc.GetConstants()
-	if !mtex.IsTextureReady() && !mtex.IsTextureLoading() {
-		if true {
-			// set up a temporary texture (single pixel with CYAN colar)
-			mtex.SetTexture(context.Call("createTexture"))
-			// js_texture_unit := js.ValueOf(js.ValueOf(self.constants.TEXTURE0 + uint32(texture_unit)))
-			context.Call("activeTexture", js.ValueOf(c.TEXTURE0))
-			context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), mtex.GetTexture())
-			// context.TexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, 1, 1, 0, c.RGBA, c.UNSIGNED_BYTE, []uint8{0, 255, 255, 255})
-			js_buffer := rc.ConvertGoSliceToJsTypedArray([]uint8{0, 255, 255, 255})
-			context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), 1, 1, 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
-		}
-		// get the pixel buffer, and the width & height of the texture
-		mtex.LoadTextureFromRemoteServer(func(pixbuf []uint8, wh [2]int) {
+	switch material.(type) {
+	case *g2d.MaterialColors:
+		// DO NOTHING
+	case *g2d.MaterialTexture:
+		mtex := material.(*g2d.MaterialTexture)
+		if !mtex.IsReady() && mtex.IsLoaded() {
+			pixbuf, wh := mtex.GetTexturePixbuf(), mtex.GetTextureWH()
 			mtex.SetTexture(context.Call("createTexture"))
 			context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), mtex.GetTexture())
 			// rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, wh[0], wh[1], 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
@@ -62,29 +65,22 @@ func prepare_material_texture(rc *WebGLRenderingContext, mtex *g2d.MaterialTextu
 				context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_T), js.ValueOf(c.CLAMP_TO_EDGE))
 				context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_MIN_FILTER), js.ValueOf(c.LINEAR))
 			}
-		})
-	}
-}
-
-// ----------------------------------------------------------------------------
-// Glow Texture
-// ----------------------------------------------------------------------------
-
-func prepare_material_glow_texture(rc *WebGLRenderingContext, mtex *g2d.MaterialGlowTexture) {
-	context, c := rc.context, rc.GetConstants()
-	if !mtex.IsTextureReady() {
-		// get the pixel buffer, and the width & height of the texture
-		mtex.LoadTexture(func(pixbuf []uint8, wh [2]int) {
+		}
+	case *g2d.MaterialGlowTexture:
+		mtex := material.(*g2d.MaterialGlowTexture)
+		if !mtex.IsReady() && mtex.IsLoaded() {
+			pixbuf, wh := mtex.GetTexturePixbuf(), mtex.GetTextureWH()
 			mtex.SetTexture(context.Call("createTexture"))
 			context.Call("bindTexture", js.ValueOf(c.TEXTURE_2D), mtex.GetTexture())
-			// self.rc.GLTexImage2DFromPixelBuffer(c.TEXTURE_2D, 0, c.RGBA, wh[0], wh[1], 0, c.RGBA, c.UNSIGNED_BYTE, pixbuf)
 			js_buffer := rc.ConvertGoSliceToJsTypedArray(pixbuf)
 			context.Call("texImage2D", js.ValueOf(c.TEXTURE_2D), 0, js.ValueOf(c.RGBA), wh[0], wh[1], 0, js.ValueOf(c.RGBA), js.ValueOf(c.UNSIGNED_BYTE), js_buffer)
 			context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_S), js.ValueOf(c.CLAMP_TO_EDGE))
 			context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_WRAP_T), js.ValueOf(c.CLAMP_TO_EDGE))
 			context.Call("texParameteri", js.ValueOf(c.TEXTURE_2D), js.ValueOf(c.TEXTURE_MIN_FILTER), js.ValueOf(c.LINEAR))
-		})
+		}
+	case *g2d.MaterialAlphabetTexture:
 	}
+	return nil
 }
 
 // ----------------------------------------------------------------------------
@@ -100,7 +96,7 @@ func prepare_material_alphabet_texture(rc *WebGLRenderingContext, mab *g2d.Mater
 	cheight := float32(mab.GetFontSize()) * 1.05 // we need some more margin below the text
 	twidth := int(math.Floor(txtctx.Call("measureText", mab.GetAlphabetString()).Get("width").Float()))
 	theight := int(cheight) // instead of int(cwidth*2)
-	// fmt.Printf("Character: %v %v  Texture: %v %v\n", cwidth, cheight, twidth, theight)
+	// common.Logger.Trace("Character: %v %v  Texture: %v %v\n", cwidth, cheight, twidth, theight)
 	txtctx.Get("canvas").Set("width", twidth)
 	txtctx.Get("canvas").Set("height", theight)
 	txtctx.Call("clearRect", 0, 0, twidth, theight)

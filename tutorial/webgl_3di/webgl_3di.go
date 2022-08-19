@@ -1,22 +1,31 @@
 package main
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/go4orward/gigl"
-	"github.com/go4orward/gigl/env/webgl10"
+	"github.com/go4orward/gigl/common"
+	cst "github.com/go4orward/gigl/common/constants"
+	webgl "github.com/go4orward/gigl/env/webgl10"
 	"github.com/go4orward/gigl/g2d"
 	"github.com/go4orward/gigl/g3d"
 )
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
+	cfg := Config{loglevel: "info", logfilter: ""}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
+	}
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/webgl3d_example.go'.
-	fmt.Println("Hello WebGL 1.0")                      // printed in the browser console
-	canvas, err := webgl10.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/example.go'.
+	canvas, err := webgl.NewWebGLCanvas("wasmcanvas") // ID of canvas element
 	if err != nil {
-		fmt.Printf("Failed to start WebGL : %v\n", err)
+		common.Logger.Error("Failed to start WebGL : %v\n", err)
 		return
 	}
 	rc := canvas.GetRenderingContext()
@@ -49,12 +58,24 @@ func main() {
 	camera := g3d.NewCamera(true, &cam_ip, &cam_ep)
 	renderer := g3d.NewRenderer(rc) // set up the renderer
 
+	SetUIEventHandlers(canvas, camera)
+
+	// run UI animation loop
+	canvas.Run(func(now float64) {
+		renderer.Clear(scene)               // prepare to render (clearing to white background)
+		renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
+		renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
+		scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
+	})
+}
+
+func SetUIEventHandlers(canvas *webgl.WebGLCanvas, camera *g3d.Camera) {
 	// set up user interactions
 	canvas.SetEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
-		fmt.Printf("%v\n", canvasxy)
+		common.Logger.Error("%v\n", canvasxy)
 	})
 	canvas.SetEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
-		fmt.Printf("%v\n", camera.Summary())
+		common.Logger.Error("%v\n", camera.Summary())
 	})
 	canvas.SetEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 		camera.RotateAroundPoint(10, float32(dxy[0])*0.2, float32(dxy[1])*0.2)
@@ -67,18 +88,10 @@ func main() {
 	})
 	canvas.SetEventHandlerForKeyPress(func(key string, code string, keystat [4]bool) {
 		if code == "Space" {
-			fmt.Printf("keypress : %v\n", code)
+			common.Logger.Info("keypress : %v\n", code)
 		}
 	})
-	fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
-
-	// run UI animation loop
-	canvas.Run(func(now float64) {
-		renderer.Clear(scene)               // prepare to render (clearing to white background)
-		renderer.RenderScene(scene, camera) // render the scene (iterating over all the SceneObjects in it)
-		renderer.RenderAxes(camera, 0.8)    // render the axes (just for visual reference)
-		scene.Get(0).Rotate([3]float32{0, 1, 1}, 1.0)
-	})
+	common.Logger.Info("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 }
 
 func get_shader_with_instance_pose_and_color(rc gigl.GLRenderingContext) gigl.GLShader {
@@ -111,13 +124,13 @@ func get_shader_with_instance_pose_and_color(rc gigl.GLRenderingContext) gigl.GL
 			gl_FragColor = vec4(v_color * v_light, 1.0);
 		}`
 	shader, _ := rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")          // (Projection) matrix
-	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")          // (View * Models) matrix
-	shader.SetBindingForUniform("light", "mat3", "lighting.dlight")       // directional lighting
-	shader.SetBindingForAttribute("xyz", "vec3", "geometry.coords")       // point XYZ coordinates
-	shader.SetBindingForAttribute("nor", "vec3", "geometry.normal")       // point normal vectors
-	shader.SetBindingForAttribute("ixyz", "vec3", "instance.pose:4:0")    // instance position of xyz coordinates
-	shader.SetBindingForAttribute("icolor", "vec3", "instance.color:4:3") // instance color (packed in 1 float32)
-	shader.CheckBindings()                                                // check validity of the shader
+	shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")          // (Projection) matrix
+	shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")          // (View * Models) matrix
+	shader.SetBindingForUniform(cst.Mat3, "light", "lighting.dlight")       // directional lighting
+	shader.SetBindingForAttribute(cst.Vec3, "xyz", "geometry.coords")       // point XYZ coordinates
+	shader.SetBindingForAttribute(cst.Vec3, "nor", "geometry.normal")       // point normal vectors
+	shader.SetBindingForAttribute(cst.Vec3, "ixyz", "instance.pose:4:0")    // instance position of xyz coordinates
+	shader.SetBindingForAttribute(cst.Vec3, "icolor", "instance.color:4:3") // instance color (packed in 1 float32)
+	shader.CheckBindings()                                                  // check validity of the shader
 	return shader
 }

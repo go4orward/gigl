@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"runtime"
 
+	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/earth"
 	opengl "github.com/go4orward/gigl/env/opengl41"
 )
@@ -14,8 +14,17 @@ func init() { // This is needed to let main() run on the startup thread.
 	runtime.LockOSThread() // Ref: https://golang.org/pkg/runtime/#LockOSThread
 }
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
-	canvas, err := opengl.NewOpenGLCanvas(800, 600, "OpenGL Globe: The Blue Marble", false)
+	cfg := Config{loglevel: "info", logfilter: ""}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
+	}
+	canvas, err := opengl.NewOpenGLCanvas(1200, 900, "OpenGL Globe: The Blue Marble", false)
 	if err != nil {
 		log.Fatal(errors.New("Failed to create OpenGL canvas : " + err.Error()))
 	}
@@ -27,7 +36,7 @@ func main() {
 
 	// add user interactions (with mouse)
 	canvas.SetEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
-		fmt.Printf("%s\n", wcamera.Summary())
+		common.Logger.Info("%s\n", wcamera.Summary())
 	})
 	canvas.SetEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 		wcamera.RotateAroundGlobe(float32(dxy[0])*0.2, float32(dxy[1])*0.2)
@@ -38,7 +47,7 @@ func main() {
 	canvas.SetEventHandlerForWindowResize(func(w int, h int) {
 		wcamera.SetAspectRatio(w, h)
 	})
-	fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
+	common.Logger.Info("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 
 	// run UI animation loop
 	canvas.Run(func(now float64) {

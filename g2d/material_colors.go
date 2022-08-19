@@ -37,7 +37,7 @@ func (self *MaterialColors) MaterialSummary() string {
 	for i := 0; i < len(self.colors); i++ {
 		colors += common.HexStringFromRGBA(self.colors[i]) + " "
 	}
-	return fmt.Sprintf("MaterialColor %s\n", colors)
+	return fmt.Sprintf("MaterialColor %s", colors)
 }
 
 func (self *MaterialColors) GetDrawModeColor(draw_mode int) [4]float32 {

@@ -53,7 +53,9 @@ func (self *WorldRenderer) RenderAxes(wcamera *WorldCamera, length float32) {
 // ----------------------------------------------------------------------------
 
 func (self *WorldRenderer) RenderWorld(globe *WorldGlobe, wcamera *WorldCamera) {
-	if globe.GSphere.Material != nil && globe.GSphere.Material.(*g2d.MaterialTexture).IsTextureLoading() {
+	if globe.GSphere == nil || globe.GSphere.Material == nil {
+		return
+	} else if mtex := globe.GSphere.Material.(*g2d.MaterialTexture); mtex.IsLoading() {
 		// It may take a long time to load the texture image (ONLY IF it's done asynchronously).
 		// We choose not to draw the globe, until the world image texture is loaded and ready.
 		return

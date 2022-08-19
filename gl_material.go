@@ -13,12 +13,15 @@ type GLMaterialColors interface {
 type GLMaterialTexture interface {
 	MaterialSummary() string
 
+	GetTexturePixbuf() []uint8
+	GetTextureWH() [2]int
+
 	GetTexture() any
 	SetTexture(texture any)
-	GetTextureWH() [2]int
-	SetTextureWH(wh [2]int)
 	GetTextureRGB() [3]float32
 	SetTextureRGB(color any)
-	IsTextureReady() bool
-	IsTextureLoading() bool
+
+	IsLoading() bool
+	IsLoaded() bool
+	IsReady() bool
 }

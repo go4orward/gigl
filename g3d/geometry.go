@@ -215,7 +215,7 @@ func (self *Geometry) HasTextureFor(mode string) bool {
 
 func (self *Geometry) AddTextureUV(tuv []float32) *Geometry {
 	if len(tuv) == 0 || len(tuv)%2 != 0 {
-		fmt.Printf("Invalid texture coordinates to add : %v\n", tuv)
+		common.Logger.Error("Invalid texture coordinates to add : %v\n", tuv)
 		return self
 	}
 	self.tuvs = append(self.tuvs, tuv)
@@ -362,9 +362,9 @@ func (self *Geometry) get_triangulation(face_vlist []uint32, face_normal *V3d) [
 	}
 	new_faces = append(new_faces, vindices)
 	if iterations == max_iterations {
-		fmt.Printf("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
+		common.Logger.Error("failed to traiangulate : %v => %v\n", face_vlist, new_faces)
 	}
-	// fmt.Printf("%v => %v\n", face_vlist, new_faces)
+	// common.Logger.Trace("%v => %v\n", face_vlist, new_faces)
 	return new_faces
 }
 
@@ -643,7 +643,7 @@ func (self *Geometry) GetIdxBuffer(draw_mode int) []uint32 {
 	case 3:
 		return self.dbuffer_face
 	default:
-		fmt.Printf("ERROR: invalid 'draw_mode' (%d) in geom.GetIdxBuffer()\n", draw_mode)
+		common.Logger.Error("invalid 'draw_mode' (%d) in geom.GetIdxBuffer()\n", draw_mode)
 		return nil
 	}
 }
@@ -655,7 +655,7 @@ func (self *Geometry) GetIdxBufferCount(draw_mode int) int {
 	case 3:
 		return len(self.dbuffer_face)
 	default:
-		fmt.Printf("ERROR: invalid 'draw_mode' (%d) in geom.GetIdxBufferCount()\n", draw_mode)
+		common.Logger.Error("invalid 'draw_mode' (%d) in geom.GetIdxBufferCount()\n", draw_mode)
 		return 0 // n
 	}
 }

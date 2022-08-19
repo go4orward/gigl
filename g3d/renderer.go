@@ -8,6 +8,7 @@ import (
 
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
+	cst "github.com/go4orward/gigl/common/constants"
 )
 
 type Renderer struct {
@@ -71,6 +72,10 @@ func (self *Renderer) RenderScene(scene *Scene, camera *Camera) {
 // ----------------------------------------------------------------------------
 
 func (self *Renderer) RenderSceneObject(scnobj *SceneObject, proj *common.Matrix4, vwmd *common.Matrix4) error {
+	if !scnobj.IsReady() {
+		common.Logger.Trace("ScnObj is not ready (%s)", scnobj.err.Error())
+		return nil
+	}
 	rc, c := self.rc, self.rc.GetConstants()
 	// Set DepthTest & Blending options
 	if scnobj.UseDepth {
@@ -118,21 +123,21 @@ func (self *Renderer) RenderSceneObject(scnobj *SceneObject, proj *common.Matrix
 		}
 	}
 	// R3: Render the object with FACE shader
-	if scnobj.FShader != nil {
+	if scnobj.FShader != nil && scnobj.FShader.IsReady() {
 		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 3, scnobj.FShader)
 		if err != nil {
 			return err
 		}
 	}
 	// R2: Render the object with EDGE shader
-	if scnobj.EShader != nil {
+	if scnobj.EShader != nil && scnobj.EShader.IsReady() {
 		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 2, scnobj.EShader)
 		if err != nil {
 			return err
 		}
 	}
 	// R1: Render the object with VERTEX shader
-	if scnobj.VShader != nil {
+	if scnobj.VShader != nil && scnobj.VShader.IsReady() {
 		err := self.render_scene_object_with_shader(scnobj, proj, vwmd, 1, scnobj.VShader)
 		if err != nil {
 			return err
@@ -156,18 +161,16 @@ func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj 
 	}
 	rc.GLUseProgram(shader.GetShaderProgram())
 	// 2. bind the uniforms of the shader program
-	for uname, umap := range shader.GetUniformBindings() {
-		if err := self.bind_uniform(uname, umap, draw_mode, scnobj, proj, vwmd); err != nil {
-			if err.Error() != "MaterialTexture is not ready" { // TODO(go4orward)
-				fmt.Println(err.Error())
-			}
+	for uname, utarget := range shader.GetUniformBindings() {
+		if err := self.bind_uniform(uname, utarget, draw_mode, scnobj, proj, vwmd); err != nil {
+			common.Logger.Error(err.Error())
 			return err
 		}
 	}
 	// 3. bind the attributes of the shader program
-	for aname, amap := range shader.GetAttributeBindings() {
-		if err := self.bind_attribute(aname, amap, draw_mode, scnobj); err != nil {
-			fmt.Println(err.Error())
+	for aname, atarget := range shader.GetAttributeBindings() {
+		if err := self.bind_attribute(aname, atarget, draw_mode, scnobj); err != nil {
+			common.Logger.Error(err.Error())
 			return err
 		}
 	}
@@ -178,10 +181,10 @@ func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj 
 		if count > 0 {
 			rc.GLBindBuffer(c.ELEMENT_ARRAY_BUFFER, buffer)
 			if scnobj.instance_count == 0 {
-				// fmt.Printf("draw FACES with drawElements()\n")
+				// common.Logger.Trace("draw FACES with drawElements()\n")
 				rc.GLDrawElements(c.TRIANGLES, count, c.UNSIGNED_INT, 0) // (mode, count, type, offset)
 			} else {
-				// fmt.Printf("draw FACES with drawElementsInstancedANGLE()\n")
+				// common.Logger.Trace("draw FACES with drawElementsInstancedANGLE()\n")
 				rc.GLDrawElementsInstanced(c.TRIANGLES, count, c.UNSIGNED_INT, 0, scnobj.instance_count)
 			}
 		}
@@ -207,210 +210,191 @@ func (self *Renderer) render_scene_object_with_shader(scnobj *SceneObject, proj 
 		}
 	default:
 		err := fmt.Errorf("Unknown mode to draw : %d\n", draw_mode)
-		fmt.Printf(err.Error())
+		common.Logger.Error(err.Error())
 		return err
 	}
 	return nil
 }
 
-func (self *Renderer) bind_uniform(uname string, umap map[string]interface{},
+func (self *Renderer) bind_uniform(uname string, ut gigl.BindTarget,
 	draw_mode int, scnobj *SceneObject, proj *common.Matrix4, vwmd *common.Matrix4) error {
 	rc, c := self.rc, self.rc.GetConstants()
-	if umap["location"] == nil {
+	if ut.Loc == nil {
 		err := fmt.Errorf("Failed to bind uniform '%v' : call 'shader.CheckBinding()' before rendering", uname)
 		return err
 	}
-	location, dtype := umap["location"], umap["dtype"].(string)
-	if umap["autobinding"] != nil {
-		autobinding := umap["autobinding"].(string)
-		// fmt.Printf("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
+	if autobinding, ok := ut.Target.(string); ok {
+		// common.Logger.Trace("Uniform (%s) : autobinding= '%s'\n", dtype, autobinding)
 		autobinding_split := strings.Split(autobinding, ":")
 		autobinding0 := autobinding_split[0]
 		switch autobinding0 {
 		case "renderer.aspect": // vec2
 			wh := rc.GetWH()
-			rc.GLUniform2f(location, float32(wh[0]), float32(wh[1]))
+			rc.GLUniform2f(ut.Loc, float32(wh[0]), float32(wh[1]))
 			return nil
 		case "renderer.proj": // mat4
 			e := (*proj.GetElements())[:]
-			rc.GLUniformMatrix4fv(location, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
+			rc.GLUniformMatrix4fv(ut.Loc, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
 			return nil
 		case "renderer.vwmd": // mat4
 			e := (*vwmd.GetElements())[:]
-			rc.GLUniformMatrix4fv(location, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
+			rc.GLUniformMatrix4fv(ut.Loc, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
 			return nil
 		case "renderer.pvm": // mat4
-			pvm := proj.MultiplyToTheRight(vwmd)      // (Proj * View * Models) matrix
-			e := (*pvm.GetElements())[:]              //
-			rc.GLUniformMatrix4fv(location, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
+			pvm := proj.MultiplyToTheRight(vwmd)    // (Proj * View * Models) matrix
+			e := (*pvm.GetElements())[:]            //
+			rc.GLUniformMatrix4fv(ut.Loc, false, e) // gl.uniformMatrix4fv(location, transpose, values_array)
 			return nil
 		case "material.color":
 			c := [4]float32{0, 1, 1, 1}
 			if mcolor, ok := scnobj.Material.(gigl.GLMaterialColors); ok {
 				c = mcolor.GetDrawModeColor(draw_mode) // get color from material (for the DrawMode)
 			}
-			switch dtype {
-			case "vec3":
-				rc.GLUniform3f(location, c[0], c[1], c[2])
+			switch ut.Type {
+			case cst.Vec3:
+				rc.GLUniform3f(ut.Loc, c[0], c[1], c[2])
 				return nil
-			case "vec4":
-				rc.GLUniform4f(location, c[0], c[1], c[2], c[3])
+			case cst.Vec4:
+				rc.GLUniform4f(ut.Loc, c[0], c[1], c[2], c[3])
 				return nil
 			}
 		case "material.texture":
 			if mtex, ok := scnobj.Material.(gigl.GLMaterialTexture); ok {
-				if !mtex.IsTextureReady() && !mtex.IsTextureLoading() {
-					self.rc.LoadMaterial(scnobj.Material)
-				} else if !mtex.IsTextureLoading() {
+				if mtex.IsReady() {
 					txt_unit := 0
 					if len(autobinding_split) >= 2 {
 						txt_unit, _ = strconv.Atoi(autobinding_split[1])
 					}
 					rc.GLActiveTexture(txt_unit)                      // activate texture unit N
 					rc.GLBindTexture(c.TEXTURE_2D, mtex.GetTexture()) // bind the texture
-					rc.GLUniform1i(location, txt_unit)                // give shader the unit number
+					rc.GLUniform1i(ut.Loc, txt_unit)                  // give shader the unit number
+				} else if mtex.IsLoaded() {
+					common.Logger.Trace("Setup %s", mtex.MaterialSummary())
+					self.rc.SetupMaterial(scnobj.Material) // setup the texture using loaded pixel data
+				} else if !mtex.IsLoading() {
+					common.Logger.Trace("Load  %s", mtex.MaterialSummary())
+					self.rc.LoadMaterial(scnobj.Material) // start loading the texture's pixel data
 				}
 				return nil
 			} else {
-				return errors.New("MaterialTexture is not ready")
+				return fmt.Errorf("Invalid MaterialTexture (%T)", scnobj.Material)
 			}
 		case "material.texture_rgba":
-			if mtex, ok := scnobj.Material.(gigl.GLMaterialTexture); ok && mtex.IsTextureReady() {
+			if mtex, ok := scnobj.Material.(gigl.GLMaterialTexture); ok && mtex.IsReady() {
 				c := mtex.GetTextureRGB()
-				rc.GLUniform4f(location, c[0], c[1], c[2], 1.0)
+				rc.GLUniform4f(ut.Loc, c[0], c[1], c[2], 1.0)
 			}
 			return nil
 		case "lighting.dlight": // mat3
 			dlight := common.NewMatrix3().Set(0, 1, 0, 0, 1, 0, 1, 1, 0) // directional light (in camera space)
 			e := (*dlight.GetElements())[:]                              // (direction[3] + intensity[3] + ambient[3])
-			rc.GLUniformMatrix3fv(location, false, e)                    // gl.uniformMatrix4fv(location, transpose, values_array)
+			rc.GLUniformMatrix3fv(ut.Loc, false, e)                      // gl.uniformMatrix4fv(location, transpose, values_array)
 			return nil
 		}
-		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, umap)
-	} else if umap["value"] != nil {
-		v := umap["value"].([]float32)
-		switch dtype {
-		case "int":
-			rc.GLUniform1i(location, int(v[0]))
+		return fmt.Errorf("Failed to bind uniform %q => %v", uname, ut)
+	} else if v, ok := ut.Target.([]float32); ok {
+		switch ut.Type {
+		case cst.Vec1:
+			rc.GLUniform1f(ut.Loc, v[0])
 			return nil
-		case "float":
-			rc.GLUniform1f(location, v[0])
+		case cst.Vec2:
+			rc.GLUniform2f(ut.Loc, v[0], v[1])
 			return nil
-		case "vec2":
-			rc.GLUniform2f(location, v[0], v[1])
+		case cst.Vec3:
+			rc.GLUniform3f(ut.Loc, v[0], v[1], v[2])
 			return nil
-		case "vec3":
-			rc.GLUniform3f(location, v[0], v[1], v[2])
-			return nil
-		case "vec4":
-			rc.GLUniform4f(location, v[0], v[1], v[2], v[3])
+		case cst.Vec4:
+			rc.GLUniform4f(ut.Loc, v[0], v[1], v[2], v[3])
 			return nil
 		}
-		return fmt.Errorf("Failed to bind uniform '%s' (%s) with %v", uname, dtype, v)
-	} else {
-		return fmt.Errorf("Failed to bind uniform '%s' (%s)", uname, dtype)
 	}
+	return fmt.Errorf("Failed to bind uniform %q => %v", uname, ut)
 }
 
-func (self *Renderer) bind_attribute(aname string, amap map[string]interface{}, draw_mode int, scnobj *SceneObject) error {
+func (self *Renderer) bind_attribute(aname string, at gigl.BindTarget,
+	draw_mode int, scnobj *SceneObject) error {
 	rc, c := self.rc, self.rc.GetConstants()
-	if amap["location"] == nil {
+	if at.Loc == nil {
 		err := errors.New("Failed to bind attribute : call 'shader.CheckBinding()' before rendering")
 		return err
 	}
-	location, dtype := amap["location"], amap["dtype"].(string)
-	autobinding := amap["autobinding"].(string)
-	// fmt.Printf("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
+	// common.Logger.Trace("Attribute (%s) : autobinding= '%s'\n", dtype, autobinding)
+	autobinding := at.Target.(string)
 	autobinding_split := strings.Split(autobinding, ":")
 	autobinding0 := autobinding_split[0]
 	switch autobinding0 {
 	case "geometry.coords": // 3 * float32 in 12 bytes (3 float32)
 		buffer, binfo := scnobj.vao.GetVtxBuffer(draw_mode, 0) // [4]int{ nverts, stride, size, offset }
 		rc.GLBindBuffer(c.ARRAY_BUFFER, buffer)
-		rc.GLVertexAttribPointer(location, binfo[2], c.FLOAT, false, binfo[1]*4, binfo[3]*4)
-		rc.GLEnableVertexAttribArray(location)
+		rc.GLVertexAttribPointer(at.Loc, binfo[2], c.FLOAT, false, binfo[1]*4, binfo[3]*4)
+		rc.GLEnableVertexAttribArray(at.Loc)
 		if rc.IsExtensionReady("ANGLE") {
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-			rc.GLVertexAttribDivisor(location, 0) // divisor == 0
+			rc.GLVertexAttribDivisor(at.Loc, 0) // divisor == 0
 		}
 		return nil
 	case "geometry.textuv": // 2 * uint16 in 4 bytes (1 float32)
 		buffer, binfo := scnobj.vao.GetVtxBuffer(draw_mode, 1) // [4]int{ nverts, stride, size, offset }
 		rc.GLBindBuffer(c.ARRAY_BUFFER, buffer)
-		rc.GLVertexAttribPointer(location, 2, c.UNSIGNED_SHORT, true, binfo[1]*4, binfo[3]*4)
-		rc.GLEnableVertexAttribArray(location)
+		rc.GLVertexAttribPointer(at.Loc, 2, c.UNSIGNED_SHORT, true, binfo[1]*4, binfo[3]*4)
+		rc.GLEnableVertexAttribArray(at.Loc)
 		if binfo[2] == 0 { // note that 'size' (binfo[2]) is 1 as 'float32', while its 2 'uint16' will be used
-			fmt.Printf("Renderer Warning : Texture UV coordinates not found (binfo=%v)\n", binfo)
+			common.Logger.Error("Renderer Warning : Texture UV coordinates not found (binfo=%v)\n", binfo)
 		}
 		if rc.IsExtensionReady("ANGLE") {
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-			rc.GLVertexAttribDivisor(location, 0) // divisor == 0
+			rc.GLVertexAttribDivisor(at.Loc, 0) // divisor == 0
 		}
 		return nil
 	case "geometry.normal": // 3 * byte in 4 bytes (1 float32)
 		buffer, binfo := scnobj.vao.GetVtxBuffer(draw_mode, 2) // [4]int{ nverts, stride, size, offset }
 		rc.GLBindBuffer(c.ARRAY_BUFFER, buffer)
-		rc.GLVertexAttribPointer(location, 3, c.BYTE, true, binfo[1]*4, binfo[3]*4)
-		rc.GLEnableVertexAttribArray(location)
+		rc.GLVertexAttribPointer(at.Loc, 3, c.BYTE, true, binfo[1]*4, binfo[3]*4)
+		rc.GLEnableVertexAttribArray(at.Loc)
 		if binfo[2] == 0 { // note that 'size' (binfo[2]) is 1 as 'float32', while its 3 'bytes' will be used
-			fmt.Printf("Renderer Warning : Normal vectors not found (binfo=%v)\n", binfo)
+			common.Logger.Error("Renderer Warning : Normal vectors not found (binfo=%v)\n", binfo)
 		}
 		if rc.IsExtensionReady("ANGLE") {
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-			rc.GLVertexAttribDivisor(location, 0) // divisor == 0
+			rc.GLVertexAttribDivisor(at.Loc, 0) // divisor == 0
 		}
 		return nil
 	case "instance.pose":
 		if scnobj.vao.InstanceBuffer != nil && len(autobinding_split) == 3 { // it's like "instance.pose:<stride>:<offset>"
-			count := get_count_from_type(dtype)
+			count := int(at.Type)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
 			rc.GLBindBuffer(c.ARRAY_BUFFER, scnobj.vao.InstanceBuffer)
-			rc.GLVertexAttribPointer(location, count, c.FLOAT, false, stride*4, offset*4)
-			rc.GLEnableVertexAttribArray(location)
+			rc.GLVertexAttribPointer(at.Loc, count, c.FLOAT, false, stride*4, offset*4)
+			rc.GLEnableVertexAttribArray(at.Loc)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-			rc.GLVertexAttribDivisor(location, 1) // divisor == 1
+			rc.GLVertexAttribDivisor(at.Loc, 1) // divisor == 1
 			return nil
 		}
 	case "instance.color":
 		if scnobj.vao.InstanceBuffer != nil && len(autobinding_split) == 3 { // it's like "instance.color:<stride>:<offset>"
-			count := get_count_from_type(dtype)
+			count := int(at.Type)
 			stride, _ := strconv.Atoi(autobinding_split[1])
 			offset, _ := strconv.Atoi(autobinding_split[2])
 			rc.GLBindBuffer(c.ARRAY_BUFFER, scnobj.vao.InstanceBuffer)
-			rc.GLVertexAttribPointer(location, count, c.BYTE, true, stride*4, offset*4)
-			rc.GLEnableVertexAttribArray(location)
+			rc.GLVertexAttribPointer(at.Loc, count, c.BYTE, true, stride*4, offset*4)
+			rc.GLEnableVertexAttribArray(at.Loc)
 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-			rc.GLVertexAttribDivisor(location, 1) // divisor == 1
+			rc.GLVertexAttribDivisor(at.Loc, 1) // divisor == 1
 			return nil
 		}
-	default:
-		buffer, stride_i, offset_i := amap["buffer"], amap["stride"], amap["offset"]
-		if buffer != nil && stride_i != nil && offset_i != nil {
-			count, stride, offset := get_count_from_type(dtype), stride_i.(int), offset_i.(int)
-			rc.GLBindBuffer(c.ARRAY_BUFFER, buffer)
-			rc.GLVertexAttribPointer(location, count, c.FLOAT, false, stride*4, offset*4)
-			rc.GLEnableVertexAttribArray(location)
-			if rc.IsExtensionReady("ANGLE") {
-				// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
-				rc.GLVertexAttribDivisor(location, 0) // divisor == 0
-			}
-		}
+		// default:
+		// 	buffer, stride_i, offset_i := amap["buffer"], amap["stride"], amap["offset"]
+		// 	if buffer != nil && stride_i != nil && offset_i != nil {
+		// 		count, stride, offset := get_count_from_type(dtype), stride_i.(int), offset_i.(int)
+		// 		rc.GLBindBuffer(c.ARRAY_BUFFER, buffer)
+		// 		rc.GLVertexAttribPointer(at.Loc, count, c.FLOAT, false, stride*4, offset*4)
+		// 		rc.GLEnableVertexAttribArray(at.Loc)
+		// 		if rc.IsExtensionReady("ANGLE") {
+		// 			// context.ext_angle.vertexAttribDivisorANGLE(attribute_loc, divisor);
+		// 			rc.GLVertexAttribDivisor(at.Loc, 0) // divisor == 0
+		// 		}
+		// 	}
 	}
-	return fmt.Errorf("Failed to bind attribute '%s' (%s) with %v", aname, dtype, amap)
-}
-
-func get_count_from_type(dtype string) int {
-	switch dtype {
-	case "float":
-		return 1
-	case "vec2":
-		return 2
-	case "vec3":
-		return 3
-	case "vec4":
-		return 4
-	default:
-		return 0
-	}
+	return fmt.Errorf("Failed to bind attribute %q => %v", aname, at)
 }

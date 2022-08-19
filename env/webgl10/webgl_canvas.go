@@ -7,6 +7,7 @@ import (
 	"syscall/js"
 
 	"github.com/go4orward/gigl"
+	"github.com/go4orward/gigl/common"
 )
 
 type WebGLCanvas struct {
@@ -105,7 +106,7 @@ func (self *WebGLCanvas) setup_mouse_event_common_handler() {
 			} else if self.evthandler_for_click != nil {
 				self.evthandler_for_click(cxy, keystat)
 			} else {
-				fmt.Printf("%s (%d %d) %v\n", etype, cxy[0], cxy[1], keystat)
+				common.Logger.Info("%s (%d %d) %v\n", etype, cxy[0], cxy[1], keystat)
 			}
 		case "dblclick":
 			cxy := [2]int{event.Get("clientX").Int(), event.Get("clientY").Int()}
@@ -113,7 +114,7 @@ func (self *WebGLCanvas) setup_mouse_event_common_handler() {
 			if self.evthandler_for_dblclick != nil {
 				self.evthandler_for_dblclick(cxy, keystat)
 			} else {
-				fmt.Printf("%s (%d %d) %v\n", etype, cxy[0], cxy[1], keystat)
+				common.Logger.Info("%s (%d %d) %v\n", etype, cxy[0], cxy[1], keystat)
 			}
 		case "mousemove":
 			if self.mouse_dragging {
@@ -123,7 +124,7 @@ func (self *WebGLCanvas) setup_mouse_event_common_handler() {
 				if self.evthandler_for_mouse_drag != nil {
 					self.evthandler_for_mouse_drag(cxy, dxy, keystat)
 				} else {
-					fmt.Printf("%s (%d %d) with %v\n", etype, dxy[0], dxy[1], keystat)
+					common.Logger.Info("%s (%d %d) with %v\n", etype, dxy[0], dxy[1], keystat)
 				}
 			} else {
 				if self.evthandler_for_mouse_over != nil {
@@ -248,7 +249,7 @@ func (self *WebGLCanvas) SetEventHandlerForWindowResize(handler func(w int, h in
 		if handler != nil {
 			handler(w, h)
 		} else {
-			fmt.Printf("window.resize %d %d\n", w, h)
+			common.Logger.Info("window.resize %d %d\n", w, h)
 		}
 		return nil
 	})

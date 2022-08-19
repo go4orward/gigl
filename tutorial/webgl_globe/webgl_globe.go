@@ -1,19 +1,27 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/go4orward/gigl/common"
 	"github.com/go4orward/gigl/earth"
-	"github.com/go4orward/gigl/env/webgl10"
+	webgl "github.com/go4orward/gigl/env/webgl10"
 )
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
+	cfg := Config{loglevel: "info", logfilter: ""}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
+	}
 	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/webglglobe_example.go'
-	fmt.Println("Hello WebGL 1.0")                      // printed in the browser console
-	canvas, err := webgl10.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/example.go'
+	common.Logger.Info("Hello WebGL 1.0")             // printed in the browser console
+	canvas, err := webgl.NewWebGLCanvas("wasmcanvas") // ID of canvas element
 	if err != nil {
-		fmt.Printf("Failed to start WebGL : %v\n", err)
+		common.Logger.Error("Failed to start WebGL : %v\n", err)
 		return
 	}
 	rc := canvas.GetRenderingContext()
@@ -22,9 +30,20 @@ func main() {
 	wcamera.SetPoseByLonLat(0, 0, 10)                                 // longitude 0°, latitude 0°, radius(distance) 10.0
 	renderer := earth.NewWorldRenderer(rc)                            // set up the world renderer
 
+	SetUIEventHandlers(canvas, wcamera)
+
+	// run UI animation loop
+	canvas.Run(func(now float64) {
+		renderer.Clear(wglobe)                  // prepare to render (clearing to black background)
+		renderer.RenderWorld(wglobe, wcamera)   // render the Globe (and all the layers & glowring)
+		wglobe.Rotate([3]float32{0, 0, 1}, 0.1) // rotate the Globe
+	})
+}
+
+func SetUIEventHandlers(canvas *webgl.WebGLCanvas, wcamera *earth.WorldCamera) {
 	// add user interactions (with mouse)
 	canvas.SetEventHandlerForDoubleClick(func(canvasxy [2]int, keystat [4]bool) {
-		fmt.Printf("%s\n", wcamera.Summary())
+		common.Logger.Info("%s\n", wcamera.Summary())
 	})
 	canvas.SetEventHandlerForMouseDrag(func(canvasxy [2]int, dxy [2]int, keystat [4]bool) {
 		wcamera.RotateAroundGlobe(float32(dxy[0])*0.2, float32(dxy[1])*0.2)
@@ -35,12 +54,5 @@ func main() {
 	canvas.SetEventHandlerForWindowResize(func(w int, h int) {
 		wcamera.SetAspectRatio(w, h)
 	})
-	fmt.Println("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
-
-	// run UI animation loop
-	canvas.Run(func(now float64) {
-		renderer.Clear(wglobe)                  // prepare to render (clearing to black background)
-		renderer.RenderWorld(wglobe, wcamera)   // render the Globe (and all the layers & glowring)
-		wglobe.Rotate([3]float32{0, 0, 1}, 0.1) // rotate the Globe
-	})
+	common.Logger.Info("Try mouse drag & wheel with SHIFT key pressed") // printed in the browser console
 }

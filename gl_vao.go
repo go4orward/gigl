@@ -1,6 +1,6 @@
 package gigl
 
-import "fmt"
+import "github.com/go4orward/gigl/common"
 
 // ----------------------------------------------------------------------------
 // VAO for Rendering 2D/3D SceneObject
@@ -29,12 +29,12 @@ func (self *VAO) ShowInfo() {
 			return "O"
 		}
 	}
-	fmt.Printf("VAO\n")
-	fmt.Printf("  VertBuffer : %s  [ nverts:%d stride:%d coord:%d tuv:%d norm:%d ]\n", ox(self.VertBuffer), self.FvtxBufferInfo[0], self.VertBufferInfo[1], self.VertBufferInfo[2], self.VertBufferInfo[3], self.VertBufferInfo[4])
-	fmt.Printf("  FvtxBuffer : %s  [ nverts:%d stride:%d coord:%d tuv:%d norm:%d ]\n", ox(self.FvtxBuffer), self.FvtxBufferInfo[0], self.FvtxBufferInfo[1], self.FvtxBufferInfo[2], self.FvtxBufferInfo[3], self.FvtxBufferInfo[4])
-	fmt.Printf("  EdgeBuffer : %s  [ count:%d ]\n", ox(self.EdgeBuffer), self.EdgeBufferCount)
-	fmt.Printf("  FaceBuffer : %s  [ count:%d ]\n", ox(self.FaceBuffer), self.FaceBufferCount)
-	fmt.Printf("  InstanceBuffer : %s  [ count:%d stride:%d ]\n", ox(self.InstanceBuffer), self.InstanceBufferInfo[0], self.InstanceBufferInfo[1])
+	common.Logger.Trace("VAO\n")
+	common.Logger.Trace("  VertBuffer : %s  [ nverts:%d stride:%d coord:%d tuv:%d norm:%d ]\n", ox(self.VertBuffer), self.FvtxBufferInfo[0], self.VertBufferInfo[1], self.VertBufferInfo[2], self.VertBufferInfo[3], self.VertBufferInfo[4])
+	common.Logger.Trace("  FvtxBuffer : %s  [ nverts:%d stride:%d coord:%d tuv:%d norm:%d ]\n", ox(self.FvtxBuffer), self.FvtxBufferInfo[0], self.FvtxBufferInfo[1], self.FvtxBufferInfo[2], self.FvtxBufferInfo[3], self.FvtxBufferInfo[4])
+	common.Logger.Trace("  EdgeBuffer : %s  [ count:%d ]\n", ox(self.EdgeBuffer), self.EdgeBufferCount)
+	common.Logger.Trace("  FaceBuffer : %s  [ count:%d ]\n", ox(self.FaceBuffer), self.FaceBufferCount)
+	common.Logger.Trace("  InstanceBuffer : %s  [ count:%d stride:%d ]\n", ox(self.InstanceBuffer), self.InstanceBufferInfo[0], self.InstanceBufferInfo[1])
 }
 
 func (self *VAO) GetVtxBuffer(draw_mode int, xun int) (interface{}, [4]int) {
@@ -51,7 +51,7 @@ func (self *VAO) GetVtxBuffer(draw_mode int, xun int) (interface{}, [4]int) {
 			nverts, stride, size, offset := pinfo[0], pinfo[1], pinfo[4], pinfo[2]+pinfo[3]
 			return self.FvtxBuffer, [4]int{nverts, stride, size, offset}
 		default:
-			fmt.Printf("ERROR: invalid 'xun' (%d) in VAO.GetVtxBuffer()\n", xun)
+			common.Logger.Error("invalid 'xun' (%d) in VAO.GetVtxBuffer()\n", xun)
 			return nil, [4]int{0, 0, 0, 0} // nverts, stride, size, offset
 		}
 	} else {
@@ -67,7 +67,7 @@ func (self *VAO) GetVtxBuffer(draw_mode int, xun int) (interface{}, [4]int) {
 			nverts, stride, size, offset := pinfo[0], pinfo[1], pinfo[4], pinfo[2]+pinfo[3]
 			return self.VertBuffer, [4]int{nverts, stride, size, offset}
 		default:
-			fmt.Printf("ERROR: invalid 'xun' (%d) in VAO.GetVtxBuffer()\n", xun)
+			common.Logger.Error("invalid 'xun' (%d) in VAO.GetVtxBuffer()\n", xun)
 			return nil, [4]int{0, 0, 0, 0} // nverts, stride, size, offset
 		}
 	}
@@ -80,7 +80,7 @@ func (self *VAO) GetIdxBuffer(draw_mode int) (interface{}, int) {
 	case 3:
 		return self.FaceBuffer, self.FaceBufferCount
 	default:
-		fmt.Printf("ERROR: invalid 'draw_mode' (%d) in VAO.GetIdxBuffer()\n", draw_mode)
+		common.Logger.Error("invalid 'draw_mode' (%d) in VAO.GetIdxBuffer()\n", draw_mode)
 		return nil, 0
 	}
 }

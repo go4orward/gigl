@@ -78,6 +78,10 @@ func (self *OpenGLRenderingContext) LoadMaterial(material gigl.GLMaterial) error
 	return load_material(self, material)
 }
 
+func (self *OpenGLRenderingContext) SetupMaterial(material gigl.GLMaterial) error {
+	return setup_material(self, material)
+}
+
 func (self *OpenGLRenderingContext) CreateShader(vertex_shader string, fragment_shader string) (gigl.GLShader, error) {
 	return create_shader(self, vertex_shader, fragment_shader)
 }
@@ -90,7 +94,7 @@ func (self *OpenGLRenderingContext) CreateDataBufferVAO() *gigl.VAO {
 	var vao uint32 // NON-ZERO values
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
-	// fmt.Printf("VAO (%T): %v\n", vao, vao)
+	// common.Logger.Trace("VAO (%T): %v\n", vao, vao)
 	return &gigl.VAO{}
 }
 
@@ -105,7 +109,7 @@ func (self *OpenGLRenderingContext) CreateVtxDataBuffer(data_slice []float32) in
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(data_slice)*4, gl.Ptr(data_slice), gl.STATIC_DRAW)
-	// fmt.Printf("  CreateDataBuffer() : type:%T  len:%d  =>  vbo:%v\n", data_slice, len(data_buffer), vbo)
+	// common.Logger.Trace("  CreateDataBuffer() : type:%T  len:%d  =>  vbo:%v\n", data_slice, len(data_buffer), vbo)
 	return vbo
 }
 
@@ -120,7 +124,7 @@ func (self *OpenGLRenderingContext) CreateIdxDataBuffer(data_slice []uint32) int
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(data_slice)*4, gl.Ptr(data_slice), gl.STATIC_DRAW)
-	// fmt.Printf("  CreateDataBuffer() : type:%T  len:%d  =>  vbo:%v\n", data_slice, len(data_buffer), vbo)
+	// common.Logger.Trace("  CreateDataBuffer() : type:%T  len:%d  =>  vbo:%v\n", data_slice, len(data_buffer), vbo)
 	return vbo
 }
 

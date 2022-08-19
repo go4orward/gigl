@@ -30,12 +30,20 @@ func NewMaterialGlowTexture(color any) *MaterialGlowTexture {
 }
 
 func (self *MaterialGlowTexture) MaterialSummary() string {
-	return fmt.Sprintf("MaterialGlowTexture %dx%d \n", self.texture_wh[0], self.texture_wh[1])
+	return fmt.Sprintf("MaterialGlowTexture %dx%d", self.texture_wh[0], self.texture_wh[1])
 }
 
 // ----------------------------------------------------------------------------
 // TEXTURE
 // ----------------------------------------------------------------------------
+
+func (self *MaterialGlowTexture) GetTexturePixbuf() []uint8 {
+	return self.pixbuf
+}
+
+func (self *MaterialGlowTexture) GetTextureWH() [2]int {
+	return self.texture_wh
+}
 
 func (self *MaterialGlowTexture) GetTexture() any {
 	return self.texture
@@ -45,14 +53,6 @@ func (self *MaterialGlowTexture) SetTexture(texture any) {
 	self.texture = texture
 }
 
-func (self *MaterialGlowTexture) GetTextureWH() [2]int {
-	return self.texture_wh
-}
-
-func (self *MaterialGlowTexture) SetTextureWH(wh [2]int) {
-	self.texture_wh = wh
-}
-
 func (self *MaterialGlowTexture) GetTextureRGB() [3]float32 {
 	return self.glow_rgb
 }
@@ -60,11 +60,15 @@ func (self *MaterialGlowTexture) GetTextureRGB() [3]float32 {
 func (self *MaterialGlowTexture) SetTextureRGB(color any) {
 }
 
-func (self *MaterialGlowTexture) IsTextureReady() bool {
+func (self *MaterialGlowTexture) IsReady() bool {
 	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
 }
 
-func (self *MaterialGlowTexture) IsTextureLoading() bool {
+func (self *MaterialGlowTexture) IsLoaded() bool {
+	return (self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+}
+
+func (self *MaterialGlowTexture) IsLoading() bool {
 	return false
 }
 
@@ -72,7 +76,7 @@ func (self *MaterialGlowTexture) IsTextureLoading() bool {
 // Loading Texture Image
 // ----------------------------------------------------------------------------
 
-func (self *MaterialGlowTexture) LoadTexture(callback_texture_loaded func(pixbuf []uint8, wh [2]int)) {
+func (self *MaterialGlowTexture) LoadGlowTexture() {
 	set_pixbuf_with_rgba := func(pbuffer []uint8, idx int, R uint8, G uint8, B uint8, A uint8) {
 		pbuffer[idx+0] = R
 		pbuffer[idx+1] = G
@@ -99,7 +103,4 @@ func (self *MaterialGlowTexture) LoadTexture(callback_texture_loaded func(pixbuf
 	}
 	self.pixbuf = pixbuf
 	self.texture_wh = [2]int{width, height} // CLAMP_TO_EDGE & NEAREST(not LINEAR) for NON-POWER-OF-2 textures
-	if callback_texture_loaded != nil {
-		callback_texture_loaded(self.pixbuf, self.texture_wh)
-	}
 }

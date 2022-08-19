@@ -7,19 +7,29 @@ import (
 	"log"
 	"os"
 
+	"github.com/go4orward/gigl/common"
 	opengl "github.com/go4orward/gigl/env/opengl41"
 	"github.com/go4orward/gigl/g2d"
 	"github.com/go4orward/gigl/g3d"
 )
 
+type Config struct {
+	loglevel  string //
+	logfilter string //
+}
+
 func main() {
-	cfg := struct{ verbose bool }{false}
-	flag.BoolVar(&cfg.verbose, "v", cfg.verbose, "show detail information")
+	cfg := Config{loglevel: "info", logfilter: ""}
+	flag.StringVar(&cfg.loglevel, "L", cfg.loglevel, "log level (error/warn/info/debug/trace)")
+	flag.StringVar(&cfg.logfilter, "F", cfg.logfilter, "log filter for trace log messages")
 	flag.Parse()
 	if len(flag.Args()) < 1 {
 		fmt.Printf("Usage:  geometry_viewer  INPUT_FILE\n")
 		flag.PrintDefaults()
 		os.Exit(0)
+	}
+	if cfg.loglevel != "" {
+		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
 	}
 	input_geometry := flag.Arg(0)
 	var geometry *g3d.Geometry = nil

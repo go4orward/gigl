@@ -13,7 +13,7 @@ func init() { // This is needed to let main() run on the startup thread.
 }
 
 func main() {
-	canvas, err := opengl.NewOpenGLCanvas(800, 600, "OpenGL1st: Triangle in Clip Space", false)
+	canvas, err := opengl.NewOpenGLCanvas(1200, 900, "OpenGL1st: Triangle in Clip Space", false)
 	if err != nil {
 		log.Fatal(errors.New("Failed to create OpenGL canvas : " + err.Error()))
 	}

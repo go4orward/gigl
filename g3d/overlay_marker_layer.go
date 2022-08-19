@@ -3,6 +3,7 @@ package g3d
 import (
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
+	cst "github.com/go4orward/gigl/common/constants"
 	"github.com/go4orward/gigl/g2d"
 )
 
@@ -114,11 +115,11 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) gigl.GLShader
 				gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("proj", "mat4", "renderer.proj")    // Projection matrix
-		shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")    // View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")   // AspectRatio
-		shader.SetBindingForUniform("color", "vec3", "material.color")  // material color
-		shader.SetBindingForAttribute("pxy", "vec2", "geometry.coords") // 2D offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")    // Projection matrix
+		shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")    // View*Model matrix
+		shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")   // AspectRatio
+		shader.SetBindingForUniform(cst.Vec3, "color", "material.color")  // material color
+		shader.SetBindingForAttribute(cst.Vec2, "pxy", "geometry.coords") // 2D offset coordinates (in CAMERA space)
 	} else { // Shader for multiple instance poses ('iorg')
 		var vertex_shader_code = `
 			precision mediump float;
@@ -140,12 +141,12 @@ func (self *OverlayMarkerLayer) GetShaderForMarker(use_poses bool) gigl.GLShader
 				gl_FragColor = vec4(color.r, color.g, color.b, 1.0);
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("proj", "mat4", "renderer.proj")       // 3D Projection matrix
-		shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")       // 3D View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")      // AspectRatio
-		shader.SetBindingForUniform("color", "vec3", "material.color")     // material color
-		shader.SetBindingForAttribute("iorg", "vec3", "instance.pose:3:0") // instance pose (:<stride>:<offset>)
-		shader.SetBindingForAttribute("pxy", "vec2", "geometry.coords")    // 2D offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")       // 3D Projection matrix
+		shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")       // 3D View*Model matrix
+		shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")      // AspectRatio
+		shader.SetBindingForUniform(cst.Vec3, "color", "material.color")     // material color
+		shader.SetBindingForAttribute(cst.Vec3, "iorg", "instance.pose:3:0") // instance pose (:<stride>:<offset>)
+		shader.SetBindingForAttribute(cst.Vec2, "pxy", "geometry.coords")    // 2D offset coordinates (in CAMERA space)
 	}
 	shader.CheckBindings() // check validity of the shader
 	return shader
@@ -227,14 +228,14 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 				gl_FragColor = texture2D(text, uv) * color;
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("proj", "mat4", "renderer.proj")          // 3D Projection matrix
-		shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")          // 3D View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")         // AspectRatio
-		shader.SetBindingForUniform("wh", "vec2", wh[:])                      // sprite size
-		shader.SetBindingForUniform("offr", "vec3", offrot[:])                // sprite offset & rotation angle
-		shader.SetBindingForUniform("color", "vec4", "material.texture_rgba") // color to be multiplied with sprite texture
-		shader.SetBindingForUniform("text", "sampler2D", "material.texture")  // texture sampler (unit:0)
-		shader.SetBindingForAttribute("pxy", "vec2", "geometry.coords")       // offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")          // 3D Projection matrix
+		shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")          // 3D View*Model matrix
+		shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")         // AspectRatio
+		shader.SetBindingForUniform(cst.Vec2, "wh", wh[:])                      // sprite size
+		shader.SetBindingForUniform(cst.Vec3, "offr", offrot[:])                // sprite offset & rotation angle
+		shader.SetBindingForUniform(cst.Vec4, "color", "material.texture_rgba") // color to be multiplied with sprite texture
+		shader.SetBindingForUniform(cst.Sampler2D, "text", "material.texture")  // texture sampler (unit:0)
+		shader.SetBindingForAttribute(cst.Vec2, "pxy", "geometry.coords")       // offset coordinates (in CAMERA space)
 	} else { // Shader for multiple instance poses ('ixyz')
 		var vertex_shader_code = `
 			precision mediump float;
@@ -273,15 +274,15 @@ func (self *OverlayMarkerLayer) GetShaderForSpriteMarker(wh [2]float32, offrot [
 				gl_FragColor = texture2D(text, uv) * color;
 			}`
 		shader, _ = self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-		shader.SetBindingForUniform("proj", "mat4", "renderer.proj")          // 3D Projection matrix
-		shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")          // 3D View*Model matrix
-		shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")         // AspectRatio
-		shader.SetBindingForUniform("wh", "vec2", wh[:])                      // sprite size
-		shader.SetBindingForUniform("offr", "vec3", offrot[:])                // sprite offset & rotation angle
-		shader.SetBindingForUniform("color", "vec4", "material.texture_rgba") // color to be multiplied with sprite texture
-		shader.SetBindingForUniform("text", "sampler2D", "material.texture")  // texture sampler (unit:0)
-		shader.SetBindingForAttribute("ixyz", "vec3", "instance.pose:3:0")    // 3D sprite instance position (in WORLD XY)
-		shader.SetBindingForAttribute("pxy", "vec2", "geometry.coords")       // 2D offset coordinates (in CAMERA space)
+		shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")          // 3D Projection matrix
+		shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")          // 3D View*Model matrix
+		shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")         // AspectRatio
+		shader.SetBindingForUniform(cst.Vec2, "wh", wh[:])                      // sprite size
+		shader.SetBindingForUniform(cst.Vec3, "offr", offrot[:])                // sprite offset & rotation angle
+		shader.SetBindingForUniform(cst.Vec4, "color", "material.texture_rgba") // color to be multiplied with sprite texture
+		shader.SetBindingForUniform(cst.Sampler2D, "text", "material.texture")  // texture sampler (unit:0)
+		shader.SetBindingForAttribute(cst.Vec3, "ixyz", "instance.pose:3:0")    // 3D sprite instance position (in WORLD XY)
+		shader.SetBindingForAttribute(cst.Vec2, "pxy", "geometry.coords")       // 2D offset coordinates (in CAMERA space)
 	}
 	shader.CheckBindings() // check validity of the shader
 	return shader

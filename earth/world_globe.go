@@ -35,6 +35,9 @@ func NewWorldGlobe(rc gigl.GLRenderingContext, bkg_color string, world_img_filep
 		shader := g3d.NewShader_TextureOnly(rc)                                 // use the standard TEXTURE_ONLY shader
 		self.GSphere = g3d.NewSceneObject(geometry, material, nil, nil, shader) // set up the scene object
 	}
+	if common.Logger.IsLogging(common.LogLevelTrace) {
+		common.Logger.Trace("WorldGlobe \n%s", self.GSphere.Summary())
+	}
 	// GlowRing around the globe (to make the globe stand out against black background)
 	//   (Note that GlowRing should be rendered in CAMERA space by Renderer)
 	if true {

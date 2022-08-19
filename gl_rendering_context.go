@@ -11,6 +11,7 @@ type GLRenderingContext interface {
 
 	// Material
 	LoadMaterial(material GLMaterial) error
+	SetupMaterial(material GLMaterial) error
 
 	// Shader
 	CreateShader(vertex_shader string, fragment_shader string) (GLShader, error)

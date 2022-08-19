@@ -1,12 +1,12 @@
 package webgl10
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"syscall/js"
 
 	"github.com/go4orward/gigl"
+	"github.com/go4orward/gigl/common"
 )
 
 type WebGLShader struct {
@@ -16,8 +16,7 @@ type WebGLShader struct {
 	shader_program js.Value               //
 	err            error                  //
 
-	uniforms   map[string]map[string]interface{} // shader uniforms to bind
-	attributes map[string]map[string]interface{} // shader attributes to bind
+	gigl.GLShaderBinder
 }
 
 // ----------------------------------------------------------------------------
@@ -28,23 +27,23 @@ func create_shader(rc *WebGLRenderingContext, vshader_source string, fshader_sou
 	// THIS CONSTRUCTOR FUNCTION IS NOT MEANT TO BE CALLED DIRECTLY BY USER.
 	// IT SHOULD BE CALLED BY 'WebGLRenderingContext.CreateShader()'.
 	shader := WebGLShader{rc: rc}
-	shader.uniforms = map[string]map[string]interface{}{}
-	shader.attributes = map[string]map[string]interface{}{}
 	shader.CreateShaderProgram(vshader_source, fshader_source)
+	shader.InitBindings()
 	return &shader, shader.err
 }
 
 func (self *WebGLShader) CreateShaderProgram(vshader_source string, fshader_source string) {
 	self.vshader_code = vshader_source
 	self.fshader_code = fshader_source
+	self.err = nil
 	rc, c := self.rc, self.rc.constants
 	vshader := rc.context.Call("createShader", c.VERTEX_SHADER) // Create a vertex shader object
 	rc.context.Call("shaderSource", vshader, self.vshader_code) // Attach vertex shader source code
 	rc.context.Call("compileShader", vshader)                   // Compile the vertex shader
 	if rc.context.Call("getShaderParameter", vshader, c.COMPILE_STATUS).Bool() == false {
 		msg := strings.TrimSpace(rc.context.Call("getShaderInfoLog", vshader).String())
-		self.err = errors.New("VShader failed to compile")
-		fmt.Println("VShader failed to compile : " + msg)
+		self.err = fmt.Errorf("VShader failed to compile (%s)", msg)
+		common.Logger.Error(self.err.Error())
 		return
 	}
 	defer rc.context.Call("deleteShader", vshader)
@@ -53,8 +52,8 @@ func (self *WebGLShader) CreateShaderProgram(vshader_source string, fshader_sour
 	rc.context.Call("compileShader", fshader)                     // Compile the fragmentt shader
 	if self.err == nil && rc.context.Call("getShaderParameter", fshader, c.COMPILE_STATUS).Bool() == false {
 		msg := strings.TrimSpace(rc.context.Call("getShaderInfoLog", fshader).String())
-		self.err = errors.New("FShader failed to compile")
-		fmt.Println("FShader failed to compile : " + msg)
+		self.err = fmt.Errorf("FShader failed to compile (%s)", msg)
+		common.Logger.Error(self.err.Error())
 		return
 	}
 	defer rc.context.Call("deleteShader", fshader)
@@ -64,10 +63,18 @@ func (self *WebGLShader) CreateShaderProgram(vshader_source string, fshader_sour
 	rc.context.Call("linkProgram", self.shader_program)           // Link both the programs
 	if self.err == nil && rc.context.Call("getProgramParameter", self.shader_program, c.LINK_STATUS).Bool() == false {
 		msg := strings.TrimSpace(rc.context.Call("getProgramInfoLog", self.shader_program).String())
-		self.err = errors.New("ShaderProgram failed to link")
-		fmt.Println("ShaderProgram failed to link : " + msg)
+		self.err = fmt.Errorf("ShaderProgram failed to link (%s)", msg)
+		common.Logger.Error(self.err.Error())
 		return
 	}
+}
+
+func (self *WebGLShader) IsReady() bool {
+	return !self.shader_program.IsNull() && self.err == nil
+}
+
+func (self *WebGLShader) GetShaderProgram() any {
+	return self.shader_program
 }
 
 func (self *WebGLShader) GetErr() error {
@@ -75,101 +82,43 @@ func (self *WebGLShader) GetErr() error {
 }
 
 // ----------------------------------------------------------------------------
-// Setting up Shader Bindings
+// Shader Bindings
 // ----------------------------------------------------------------------------
-
-func (self *WebGLShader) SetBindingForUniform(name string, dtype string, option interface{}) {
-	// Set uniform binding with its name, data_type, and AUTO/MANUAL option.
-	switch option.(type) {
-	case string: // let Renderer bind the uniform variable automatically
-		autobinding := option.(string)
-		autobinding_split := strings.Split(option.(string), ":")
-		autobinding0 := autobinding_split[0] // "material.texture:0" (with texture UNIT value)
-		switch autobinding0 {
-		case "lighting.dlight": // [mat3](3D) directional light information with (direction[3], color[3], ambient[3])
-		case "material.color": //  [vec3] uniform color taken from Material
-		case "material.texture": // [sampler2D] texture sampler(unit), like "material.texture:0"
-		case "renderer.aspect": // AspectRatio of camera, Width : Height
-		case "renderer.pvm": //  [mat3](2D) or [mat4](3D) (Proj * View * Model) matrix
-		case "renderer.proj": // [mat3](2D) or [mat4](3D) (Projection) matrix
-		case "renderer.vwmd": // [mat3](2D) or [mat4](3D) (View * Model) matrix
-		default:
-			fmt.Printf("Failed to SetBindingForUniform('%s') : unknown autobinding '%s'\n", name, autobinding)
-			return
-		}
-		self.uniforms[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
-	case []float32: // let Renderer set the uniform manually, with the given values
-		self.uniforms[name] = map[string]interface{}{"dtype": dtype, "value": option.([]float32)}
-	default:
-		fmt.Printf("Failed to SetBindingForUniform('%s') : invalid option %v\n", name, option)
-		return
-	}
-}
-
-func (self *WebGLShader) SetBindingForAttribute(name string, dtype string, autobinding string) {
-	// Set attribute binding with its name, data_type, with AUTO_BINDING option.
-	autobinding_split := strings.Split(autobinding, ":")
-	autobinding0 := autobinding_split[0]
-	switch autobinding0 {
-	case "geometry.coords": // point coordinates
-	case "geometry.textuv": // texture UV coordinates
-	case "geometry.normal": // (3D only) normal vector
-	case "instance.pose", "instance.color": // instance pose or color, like "instance.pose:<stride>:<offset>"
-		if len(autobinding_split) != 3 {
-			fmt.Printf("Failed to SetBindingForAttribute('%s') : try 'instance.pose:<stride>:<offset>'\n", name)
-			return
-		}
-	default:
-		fmt.Printf("Failed to SetBindingForAttribute('%s') : invalid autobinding '%s'\n", name, autobinding)
-		return
-	}
-	self.attributes[name] = map[string]interface{}{"dtype": dtype, "autobinding": autobinding}
-}
 
 func (self *WebGLShader) CheckBindings() {
 	// check if the shader was properly built
 	if self.err != nil {
-		fmt.Printf("ShaderProgram is not ready for CheckBindings()\n")
+		common.Logger.Error("ShaderProgram is not ready for CheckBindings()\n")
 		return
 	}
 	// check uniform locations (type: 'object')
-	for uname, umap := range self.uniforms {
+	for uname, utarget := range self.Uniforms {
 		location := self.rc.context.Call("getUniformLocation", self.shader_program, uname)
 		if location.IsNull() {
-			fmt.Printf("Uniform '%s' cannot be found in the shader program\n", uname)
-		} else if umap["dtype"] == nil || (umap["autobinding"] == "" && umap["value"] == nil) {
-			fmt.Printf("Invalid binding for uniform '%s' : %v \n", uname, umap)
+			self.err = fmt.Errorf("Uniform %q cannot be found in the shader program\n", uname)
+			common.Logger.Error(self.err.Error())
+		} else if utarget.Target == nil {
+			self.err = fmt.Errorf("Invalid binding for uniform %q : %v \n", uname, utarget)
+			common.Logger.Error(self.err.Error())
 		} else { // remember the location, since gl.getXXX() is expensive
-			umap["location"] = interface{}(location) // save it as interface{}, not js.Value
+			utarget.Loc = location // save it as interface{}, not js.Value
 		}
+		self.Uniforms[uname] = utarget
 	}
 	// check attribute locations (type: 'object')
-	for aname, amap := range self.attributes {
+	for aname, atarget := range self.Attributes {
 		location := self.rc.context.Call("getAttribLocation", self.shader_program, aname)
 		if location.IsNull() {
-			fmt.Printf("Attribute '%s' cannot be found in the shader program\n", aname)
-		} else if amap["dtype"] == nil || (amap["autobinding"] == "" && amap["buffer"] == nil) {
-			fmt.Printf("Invalid binding for attribute '%s' : %v \n", aname, amap)
+			self.err = fmt.Errorf("Attribute %q cannot be found in the shader program\n", aname)
+			common.Logger.Error(self.err.Error())
+		} else if atarget.Target == nil {
+			self.err = fmt.Errorf("Invalid binding for attribute %q : %v \n", aname, atarget)
+			common.Logger.Error(self.err.Error())
 		} else { // remember the location, since gl.getXXX() is expensive
-			amap["location"] = interface{}(location) // save it as interface{}, not js.Value
+			atarget.Loc = location // save it as interface{}, not js.Value
 		}
+		self.Attributes[aname] = atarget
 	}
-}
-
-// ----------------------------------------------------------------------------
-// Using Shader Bindings
-// ----------------------------------------------------------------------------
-
-func (self *WebGLShader) GetShaderProgram() interface{} {
-	return self.shader_program
-}
-
-func (self *WebGLShader) GetUniformBindings() map[string]map[string]interface{} {
-	return self.uniforms
-}
-
-func (self *WebGLShader) GetAttributeBindings() map[string]map[string]interface{} {
-	return self.attributes
 }
 
 // ----------------------------------------------------------------------------
@@ -182,8 +131,7 @@ func (self *WebGLShader) Copy() gigl.GLShader {
 	shader := WebGLShader{rc: self.rc, vshader_code: self.vshader_code, fshader_code: self.fshader_code}
 	shader.shader_program = self.shader_program
 	// initialize shader bindings with empty map
-	shader.uniforms = map[string]map[string]interface{}{}
-	shader.attributes = map[string]map[string]interface{}{}
+	shader.InitBindings()
 	return &shader
 }
 
@@ -203,16 +151,18 @@ func (self *WebGLShader) String() string {
 
 func (self *WebGLShader) Summary() string {
 	summary := ""
-	if self.err == nil {
-		summary += fmt.Sprintf("Shader  program:%v(%T)\n", self.shader_program, self.shader_program)
+	if self.err == nil && !self.shader_program.IsNull() {
+		summary += fmt.Sprintf("Shader  program:Y \n")
+	} else if self.err == nil && self.shader_program.IsNull() {
+		summary += fmt.Sprintf("Shader  program:N \n")
 	} else {
-		summary += fmt.Sprintf("Shader  with Error - %s\n", self.err.Error())
+		summary += fmt.Sprintf("Shader  with Error (%s)\n", self.err.Error())
 	}
-	for uname, umap := range self.uniforms {
-		summary += fmt.Sprintf("    Uniform   %-10s: %v\n", uname, umap)
+	for uname, ut := range self.Uniforms {
+		summary += fmt.Sprintf("    Uniform   %-10s: %s\n", uname, ut.String())
 	}
-	for aname, amap := range self.attributes {
-		summary += fmt.Sprintf("    Attribute %-10s: %v\n", aname, amap)
+	for aname, at := range self.Attributes {
+		summary += fmt.Sprintf("    Attribute %-10s: %s\n", aname, at.String())
 	}
-	return summary
+	return strings.TrimSuffix(summary, "\n")
 }

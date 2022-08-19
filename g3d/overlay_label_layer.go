@@ -6,6 +6,7 @@ import (
 
 	"github.com/go4orward/gigl"
 	"github.com/go4orward/gigl/common"
+	cst "github.com/go4orward/gigl/common/constants"
 	"github.com/go4orward/gigl/g2d"
 )
 
@@ -203,16 +204,16 @@ func (self *OverlayLabelLayer) build_labeltext_scene_object(label *OverlayLabel)
 	offr := []float32{float32(label.offset[0]), float32(label.offset[1]), 0}
 	whlen := []float32{label.chwh[0], label.chwh[1], float32(self.alphabet_texture.GetAlaphabetLength())}
 	lrgba := common.RGBAFromHexString(label.color)                                            // label color RGBA
-	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")                              // Projection matrix
-	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")                              // View*Model matrix
-	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")                             // AspectRatio
-	shader.SetBindingForUniform("orgn", "vec3", label.xyz[:])                                 // label origin
-	shader.SetBindingForUniform("offr", "vec3", offr)                                         // label offset & rotation_angle
-	shader.SetBindingForUniform("whlen", "vec3", whlen)                                       // ch_width, ch_height, alphabet_length
-	shader.SetBindingForUniform("color", "vec4", lrgba[:])                                    // label color
-	shader.SetBindingForUniform("text", "sampler2D", "material.texture")                      // texture sampler (unit:0)
-	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")                          // point coordinates
-	shader.SetBindingForAttribute("cpose", "vec2", "instance.pose:2:0")                       // character pose (:<stride>:<offset>)
+	shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")                            // Projection matrix
+	shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")                            // View*Model matrix
+	shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")                           // AspectRatio
+	shader.SetBindingForUniform(cst.Vec3, "orgn", label.xyz[:])                               // label origin
+	shader.SetBindingForUniform(cst.Vec3, "offr", offr)                                       // label offset & rotation_angle
+	shader.SetBindingForUniform(cst.Vec3, "whlen", whlen)                                     // ch_width, ch_height, alphabet_length
+	shader.SetBindingForUniform(cst.Vec4, "color", lrgba[:])                                  // label color
+	shader.SetBindingForUniform(cst.Sampler2D, "text", "material.texture")                    // texture sampler (unit:0)
+	shader.SetBindingForAttribute(cst.Vec2, "gvxy", "geometry.coords")                        // point coordinates
+	shader.SetBindingForAttribute(cst.Vec2, "cpose", "instance.pose:2:0")                     // character pose (:<stride>:<offset>)
 	shader.CheckBindings()                                                                    // check validity of the shader
 	scnobj := NewSceneObject(self.alphabet_geometry, self.alphabet_texture, shader, nil, nil) // shader for drawing POINTS (for each character)
 	// calculate the pose of each character (rune)
@@ -234,7 +235,7 @@ func (self *OverlayLabelLayer) build_labelbkg_scene_object(label *OverlayLabel) 
 	rbtm := [2]float32{label.offset[0] + tlen + 4, label.offset[1] - label.chwh[1]/2}
 	bkgtype_split := strings.Split(label.bkgtype, ":")
 	if len(bkgtype_split) < 2 {
-		fmt.Printf("Failed to build_labelbkg_scene_object() : invalid background type '%s'\n", label.bkgtype)
+		common.Logger.Error("Failed to build_labelbkg_scene_object() : invalid background type '%s'\n", label.bkgtype)
 		return nil
 	}
 	bkgtype0 := bkgtype_split[0]
@@ -263,7 +264,7 @@ func (self *OverlayLabelLayer) build_labelbkg_scene_object(label *OverlayLabel) 
 		}
 		geometry.BuildDataBuffers(true, true, false)
 	default:
-		fmt.Printf("Failed to build_labelbkg_scene_object() : invalid background type '%s'\n", label.bkgtype)
+		common.Logger.Error("Failed to build_labelbkg_scene_object() : invalid background type '%s'\n", label.bkgtype)
 		return nil
 	}
 	var vertex_shader_code = `
@@ -286,14 +287,14 @@ func (self *OverlayLabelLayer) build_labelbkg_scene_object(label *OverlayLabel) 
 			gl_FragColor = color;
 		}`
 	shader, _ := self.rc.CreateShader(vertex_shader_code, fragment_shader_code)
-	shader.SetBindingForUniform("proj", "mat4", "renderer.proj")      // Projection matrix
-	shader.SetBindingForUniform("vwmd", "mat4", "renderer.vwmd")      // View*Model matrix
-	shader.SetBindingForUniform("asp", "vec2", "renderer.aspect")     // AspectRatio
-	shader.SetBindingForUniform("orgn", "vec3", label.xyz[:])         // label origin
-	shader.SetBindingForUniform("color", "vec4", "material.color")    // label color
-	shader.SetBindingForAttribute("gvxy", "vec2", "geometry.coords")  // point coordinates from 2D geometry
-	shader.CheckBindings()                                            // check validity of the shader
-	scnobj := NewSceneObject(geometry, material, nil, shader, shader) // shader for drawing EDGEs & FACEs
+	shader.SetBindingForUniform(cst.Mat4, "proj", "renderer.proj")     // Projection matrix
+	shader.SetBindingForUniform(cst.Mat4, "vwmd", "renderer.vwmd")     // View*Model matrix
+	shader.SetBindingForUniform(cst.Vec2, "asp", "renderer.aspect")    // AspectRatio
+	shader.SetBindingForUniform(cst.Vec3, "orgn", label.xyz[:])        // label origin
+	shader.SetBindingForUniform(cst.Vec4, "color", "material.color")   // label color
+	shader.SetBindingForAttribute(cst.Vec2, "gvxy", "geometry.coords") // point coordinates from 2D geometry
+	shader.CheckBindings()                                             // check validity of the shader
+	scnobj := NewSceneObject(geometry, material, nil, shader, shader)  // shader for drawing EDGEs & FACEs
 	scnobj.UseDepth = true
 	return scnobj
 }

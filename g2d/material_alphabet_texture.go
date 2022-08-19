@@ -30,12 +30,20 @@ func NewMaterialAlphabetTexture(fontfamily string, fontsize int, color string, o
 // ----------------------------------------------------------------------------
 
 func (self *MaterialAlphabetTexture) MaterialSummary() string {
-	return fmt.Sprintf("MaterialAlphabetTexture %dx%d \n", self.texture_wh[0], self.texture_wh[1])
+	return fmt.Sprintf("MaterialAlphabetTexture")
 }
 
 // ----------------------------------------------------------------------------
 // MaterialTexture Interface Functions
 // ----------------------------------------------------------------------------
+
+func (self *MaterialAlphabetTexture) GetTexturePixbuf() []uint8 {
+	return nil
+}
+
+func (self *MaterialAlphabetTexture) GetTextureWH() [2]int {
+	return self.texture_wh
+}
 
 func (self *MaterialAlphabetTexture) GetTexture() any {
 	return self.texture
@@ -43,10 +51,6 @@ func (self *MaterialAlphabetTexture) GetTexture() any {
 
 func (self *MaterialAlphabetTexture) SetTexture(texture any) {
 	self.texture = texture
-}
-
-func (self *MaterialAlphabetTexture) GetTextureWH() [2]int {
-	return self.texture_wh
 }
 
 func (self *MaterialAlphabetTexture) SetTextureWH(wh [2]int) {

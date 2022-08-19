@@ -36,12 +36,26 @@ func NewMaterialTexture(filepath string, color ...string) *MaterialTexture {
 }
 
 func (self *MaterialTexture) MaterialSummary() string {
-	return fmt.Sprintf("MaterialTexture %dx%d \n", self.texture_wh[0], self.texture_wh[1])
+	if self.IsReady() || self.IsLoaded() {
+		return fmt.Sprintf("MaterialTexture %dx%d %q", self.texture_wh[0], self.texture_wh[1], self.image_filepath)
+	} else if self.IsLoading() {
+		return fmt.Sprintf("MaterialTexture loading %q", self.image_filepath)
+	} else {
+		return fmt.Sprintf("MaterialTexture %q", self.image_filepath)
+	}
 }
 
 // ----------------------------------------------------------------------------
 // TEXTURE
 // ----------------------------------------------------------------------------
+
+func (self *MaterialTexture) GetTexturePixbuf() []uint8 {
+	return self.pixbuf
+}
+
+func (self *MaterialTexture) GetTextureRGB() [3]float32 {
+	return self.texture_rgb
+}
 
 func (self *MaterialTexture) GetTexture() any {
 	return self.texture
@@ -55,14 +69,6 @@ func (self *MaterialTexture) GetTextureWH() [2]int {
 	return self.texture_wh
 }
 
-func (self *MaterialTexture) SetTextureWH(wh [2]int) {
-	self.texture_wh = wh
-}
-
-func (self *MaterialTexture) GetTextureRGB() [3]float32 {
-	return self.texture_rgb
-}
-
 func (self *MaterialTexture) SetTextureRGB(color any) {
 	switch color.(type) {
 	case [3]float32:
@@ -72,13 +78,15 @@ func (self *MaterialTexture) SetTextureRGB(color any) {
 	}
 }
 
-func (self *MaterialTexture) IsTextureReady() bool {
+func (self *MaterialTexture) IsReady() bool {
 	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
 }
 
-func (self *MaterialTexture) IsTextureLoading() bool {
-	// It may take a long time to load the texture image asynchronously.
-	// That's why we have this function defined in GLMaterial interface.
+func (self *MaterialTexture) IsLoaded() bool {
+	return self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0
+}
+
+func (self *MaterialTexture) IsLoading() bool {
 	return self.texture_loading
 }
 
@@ -86,72 +94,70 @@ func (self *MaterialTexture) IsTextureLoading() bool {
 // Loading Texture Image
 // ----------------------------------------------------------------------------
 
-func (self *MaterialTexture) LoadTextureFromLocalFile(callback_texture_loaded func(pixbuf []uint8, wh [2]int)) {
+func (self *MaterialTexture) LoadTextureFromLocalFile() {
 	if self.image_filepath != "" && self.err == nil {
 		// Load texture image asynchronously from a file
+		self.texture = nil
+		self.pixbuf = nil
+		self.texture_wh = [2]int{0, 0}
 		self.texture_loading = true
-		if true {
-			// go func() {  // OpenGL's gl.GenTextures() fails on different threads other than main thread.
-			// fmt.Printf("Texture started loading %s\n", self.image_filepath)
+		go func() { // OpenGL's gl.GenTextures() fails on different threads other than main thread.
+			// common.Logger.Trace("Texture started loading %s\n", self.image_filepath)
+			defer func() { self.texture_loading = false }()
 			imgFile, err := os.Open(self.image_filepath)
 			if err != nil {
 				self.err = fmt.Errorf("texture %q not found", self.image_filepath)
-				fmt.Printf("WARNING: %v\n", self.err)
+				common.Logger.Error("%v\n", self.err)
 			} else {
 				defer imgFile.Close()
 				bytes, _ := ioutil.ReadAll(imgFile)
 				pixbuf, wh, err := self.decode_pixels_from_image_bytes(bytes, filepath.Ext(self.image_filepath))
 				if err != nil {
 					self.err = fmt.Errorf("texture %q failed to decode (%v)", self.image_filepath, err)
-					fmt.Printf("WARNING: %v\n", self.err)
+					common.Logger.Error("%v\n", self.err)
 				} else {
 					self.pixbuf = pixbuf
 					self.texture_wh = wh
-					// fmt.Printf("Texture '%s' %v ready for OpenGL\n", self.image_filepath, self.texture_wh)
-					if callback_texture_loaded != nil { // set up the texture in this callback
-						callback_texture_loaded(self.pixbuf, self.texture_wh)
-					}
+					// common.Logger.Trace("Texture '%s' %v ready for OpenGL\n", self.image_filepath, self.texture_wh)
 				}
 			}
-			self.texture_loading = false
-			// }()
-		}
+		}()
 	}
 }
 
-func (self *MaterialTexture) LoadTextureFromRemoteServer(callback_texture_loaded func(pixbuf []uint8, wh [2]int)) {
+func (self *MaterialTexture) LoadTextureFromRemoteServer() {
 	if self.image_filepath != "" && self.err == nil {
+		self.texture = nil
+		self.pixbuf = nil
+		self.texture_wh = [2]int{0, 0}
 		request_url := self.image_filepath
 		self.texture_loading = true
 		go func() {
-			// log.Printf("Texture started GET %q\n", request_url)
+			// common.Logger.Trace("Texture started GET %q\n", request_url)
 			defer func() { self.texture_loading = false }()
 			resp, err := http.Get(request_url)
 			if err != nil {
 				self.err = fmt.Errorf("Failed to GET %q (%v)\n", request_url, err)
-				fmt.Printf("WARNING: %v\n", self.err)
+				common.Logger.Error("%v\n", self.err)
 				return
 			}
 			defer resp.Body.Close()
 			response_body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				self.err = fmt.Errorf("Failed to GET %q (%v)\n", request_url, err)
-				fmt.Printf("WARNING: %v\n", self.err)
+				common.Logger.Error("%v\n", self.err)
 			} else if resp.StatusCode < 200 || resp.StatusCode > 299 { // response with error message
 				self.err = fmt.Errorf("Failed to GET %s : (%d) %s\n", request_url, resp.StatusCode, string(response_body))
-				fmt.Printf("WARNING: %v\n", self.err)
+				common.Logger.Error("%v\n", self.err)
 			} else { // successful response with texture image
 				pixbuf, wh, err := self.decode_pixels_from_image_bytes(response_body, filepath.Ext(request_url))
-				// fmt.Printf("Texture '%s' %v ready for OpenGL\n", self.image_filepath, self.texture_wh)
+				// common.Logger.Error("Texture '%s' %v ready for OpenGL\n", self.image_filepath, self.texture_wh)
 				if err != nil {
 					self.err = fmt.Errorf("Failed to decode %q (err:%v)\n", request_url, err.Error())
-					fmt.Printf("WARNING: %v\n", self.err)
+					common.Logger.Error("%v\n", self.err)
 				} else {
 					self.pixbuf = pixbuf
 					self.texture_wh = wh
-					if callback_texture_loaded != nil {
-						callback_texture_loaded(self.pixbuf, self.texture_wh)
-					}
 					// log.Printf("Texture (%dx%d) loaded for WebGL from server %q (ready:%v)\n", wh[0], wh[1], request_url, self.IsTextureReady())
 				}
 			}
@@ -174,7 +180,7 @@ func (self *MaterialTexture) decode_pixels_from_image_bytes(imgbytes []byte, ext
 		return nil, [2]int{}, err
 	}
 	size := img.Bounds().Size()
-	// fmt.Printf("Texture image (%dx%d) decoded as %T\n", size.X, size.Y, img)
+	// common.Logger.Trace("Texture image (%dx%d) decoded as %T\n", size.X, size.Y, img)
 	var pixbuf []uint8
 	switch img.(type) {
 	case *image.RGBA: // traditional 32-bit alpha-premultiplied R/G/B/A color

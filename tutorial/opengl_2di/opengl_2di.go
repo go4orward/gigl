@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go4orward/gigl/common"
-	webgl "github.com/go4orward/gigl/env/webgl10"
+	opengl "github.com/go4orward/gigl/env/opengl41"
 	"github.com/go4orward/gigl/g2d"
 )
 
@@ -14,13 +14,11 @@ type Config struct {
 }
 
 func main() {
-	cfg := Config{loglevel: "info", logfilter: ""}
+	cfg := Config{loglevel: "trace", logfilter: ""}
 	if cfg.loglevel != "" {
 		common.SetLogger(common.NewConsoleLogger(cfg.loglevel)).SetTraceFilter(cfg.logfilter).SetOption("", false)
 	}
-	// THIS CODE IS SUPPOSED TO BE BUILT AS WEBASSEMBLY AND RUN INSIDE A BROWSER.
-	// BUILD IT LIKE 'GOOS=js GOARCH=wasm go build -o example.wasm examples/example.go'.
-	canvas, err := webgl.NewWebGLCanvas("wasmcanvas") // ID of canvas element
+	canvas, err := opengl.NewOpenGLCanvas(1200, 900, "OpenGL2D: Triangle in World Space", false)
 	if err != nil {
 		common.Logger.Error("Failed to start WebGL : %v\n", err)
 		return
@@ -37,6 +35,7 @@ func main() {
 	renderer := g2d.NewRenderer(rc) // set up the renderer
 
 	SetUIEventHandlers(canvas, camera)
+	common.Logger.Trace("SceneObject\n%s", scene.Get(0).Summary())
 
 	// Run UI animation loop
 	canvas.Run(func(now float64) {
@@ -46,7 +45,7 @@ func main() {
 	})
 }
 
-func SetUIEventHandlers(canvas *webgl.WebGLCanvas, camera *g2d.Camera) {
+func SetUIEventHandlers(canvas *opengl.OpenGLCanvas, camera *g2d.Camera) {
 	// set up user interactions
 	canvas.SetEventHandlerForClick(func(canvasxy [2]int, keystat [4]bool) {
 		wxy := camera.UnprojectCanvasToWorld(canvasxy)

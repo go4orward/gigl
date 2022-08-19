@@ -28,6 +28,8 @@ type SceneObject struct {
 	instance_buffer []float32 //
 	// VAO (set of RenderingContext buffers)
 	vao *gigl.VAO //
+	//
+	err error
 }
 
 func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
@@ -50,25 +52,29 @@ func NewSceneObject(geometry gigl.GLGeometry, material gigl.GLMaterial,
 	return &sobj
 }
 
+func (self *SceneObject) IsReady() bool {
+	return self.Geometry != nil && self.err == nil
+}
+
 func (self *SceneObject) Summary() string {
 	summary := "SceneObject " + self.Geometry.Summary()
 	if self.instance_buffer != nil {
 		summary += fmt.Sprintf("  Instancess : count=%d stride=%d\n", self.instance_count, self.instance_stride)
 	}
 	if self.Material != nil {
-		summary += fmt.Sprintf("  %s", self.Material.MaterialSummary())
+		summary += fmt.Sprintf("  %s\n", self.Material.MaterialSummary())
 	}
 	if self.VShader != nil {
-		summary += fmt.Sprintf("  VERT %s", self.VShader.Summary())
+		summary += fmt.Sprintf("  VERT %s\n", self.VShader.Summary())
 	}
 	if self.EShader != nil {
-		summary += fmt.Sprintf("  EDGE %s", self.EShader.Summary())
+		summary += fmt.Sprintf("  EDGE %s\n", self.EShader.Summary())
 	}
 	if self.FShader != nil {
-		summary += fmt.Sprintf("  FACE %s", self.FShader.Summary())
+		summary += fmt.Sprintf("  FACE %s\n", self.FShader.Summary())
 	}
 	summary += fmt.Sprintf("  Flags    : UseDepth=%t  UseBlend=%t\n", self.UseDepth, self.UseBlend)
-	summary += fmt.Sprintf("  Children : %d\n", len(self.children))
+	summary += fmt.Sprintf("  Children : %d", len(self.children))
 	return summary
 }
 
@@ -118,7 +124,7 @@ func (self *SceneObject) SetInstanceBuffer(instance_count int, instance_stride i
 func (self *SceneObject) SetInstancePoseValues(instance_index int, offset int, values ...float32) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
 	if (offset + len(values)) > self.instance_stride {
-		fmt.Printf("WARNING: SetInstancePoseValues() failed : invalid offset (%d) and value count (%d) for the stride (%d)\n", offset, len(values), self.instance_stride)
+		common.Logger.Error("SetInstancePoseValues() failed : invalid offset (%d) and value count (%d) for the stride (%d)\n", offset, len(values), self.instance_stride)
 		return
 	}
 	pos := instance_index * self.instance_stride
@@ -130,7 +136,7 @@ func (self *SceneObject) SetInstancePoseValues(instance_index int, offset int, v
 func (self *SceneObject) SetInstanceColorValues(instance_index int, offset int, v0 uint8, v1 uint8, v2 uint8, v3 uint8) {
 	// This function is OPTIONAL (only if multiple instances of the geometry are rendered)
 	if (offset + 1) > self.instance_stride {
-		fmt.Printf("WARNING: SetInstanceColorValue() failed : invalid offset (%d) for the stride (%d)\n", offset, self.instance_stride)
+		common.Logger.Error("SetInstanceColorValue() failed : invalid offset (%d) for the stride (%d)\n", offset, self.instance_stride)
 		return
 	}
 	pos := instance_index * self.instance_stride

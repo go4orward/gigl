@@ -99,7 +99,7 @@ func (self *Camera) CheckInternalParameters() *Camera {
 		}
 	}
 	if param_fixed {
-		fmt.Printf("Camera parameters fixed to wh:%v fov:%v zoom:%v nearfar:%v\n", self.ip.WH, self.ip.Fov, self.ip.Zoom, self.ip.NearFar)
+		common.Logger.Trace("Camera parameters fixed to wh:%v fov:%v zoom:%v nearfar:%v\n", self.ip.WH, self.ip.Fov, self.ip.Zoom, self.ip.NearFar)
 		self.UpdateProjectionMatrix()
 	}
 	return self
@@ -273,17 +273,17 @@ func (self *Camera) TestDataBuffer(dbuffer []float32, stride int) {
 	}
 	for j := 0; j < 3; j++ {
 		if j == 0 {
-			fmt.Printf("CameraTest: ")
+			common.Logger.Trace("CameraTest: ")
 		} else {
-			fmt.Printf("            ")
+			common.Logger.Trace("            ")
 		}
 		for i := 0; i < len(vertices); i++ {
 			if i%3 == 2 {
-				fmt.Printf("%5.2f  ", vertices[i][j])
+				common.Logger.Trace("%5.2f  ", vertices[i][j])
 			} else {
-				fmt.Printf("%5.2f ", vertices[i][j])
+				common.Logger.Trace("%5.2f ", vertices[i][j])
 			}
 		}
-		fmt.Printf("\n")
+		common.Logger.Trace("\n")
 	}
 }
