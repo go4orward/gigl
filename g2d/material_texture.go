@@ -53,10 +53,6 @@ func (self *MaterialTexture) GetTexturePixbuf() []uint8 {
 	return self.pixbuf
 }
 
-func (self *MaterialTexture) GetTextureRGB() [3]float32 {
-	return self.texture_rgb
-}
-
 func (self *MaterialTexture) GetTexture() any {
 	return self.texture
 }
@@ -69,24 +65,34 @@ func (self *MaterialTexture) GetTextureWH() [2]int {
 	return self.texture_wh
 }
 
+func (self *MaterialTexture) GetTextureRGB() [3]float32 {
+	return self.texture_rgb
+}
+
 func (self *MaterialTexture) SetTextureRGB(color any) {
 	switch color.(type) {
-	case [3]float32:
-		self.texture_rgb = color.([3]float32)
 	case string:
 		self.texture_rgb = common.RGBFromHexString(color.(string))
+	case [3]float32:
+		self.texture_rgb = color.([3]float32)
+	case []float32:
+		c := color.([]float32)
+		self.texture_rgb = [3]float32{c[0], c[1], c[2]}
 	}
 }
 
 func (self *MaterialTexture) IsReady() bool {
-	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+	// Texture was successfully set up, and it's ready for rendering.
+	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
 }
 
 func (self *MaterialTexture) IsLoaded() bool {
-	return self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0
+	// Texture was successfully loaded, and it needs to be set up by main thread.
+	return (self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
 }
 
 func (self *MaterialTexture) IsLoading() bool {
+	// Texture is being loaded asynchronously by non-main thread (using Go function).
 	return self.texture_loading
 }
 

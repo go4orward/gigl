@@ -21,7 +21,7 @@ type GLMaterialTexture interface {
 	GetTextureRGB() [3]float32
 	SetTextureRGB(color any)
 
-	IsLoading() bool
-	IsLoaded() bool
-	IsReady() bool
+	IsLoading() bool // Texture is being loaded asynchronously by non-main thread (using Go function).
+	IsLoaded() bool  // Texture was successfully loaded, and it needs to be set up by main thread.
+	IsReady() bool   // Texture was successfully set up, and it's ready for rendering.
 }

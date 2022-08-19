@@ -33,7 +33,9 @@ func load_material(rc *OpenGLRenderingContext, material gigl.GLMaterial) error {
 			mtex.LoadGlowTexture()
 		}
 	case *g2d.MaterialAlphabetTexture:
-		prepare_material_alphabet_texture(rc, material.(*g2d.MaterialAlphabetTexture))
+		mtex := material.(*g2d.MaterialAlphabetTexture)
+		// TODO(go4orward)
+		mtex.LoadAlphabetTexture()
 	}
 	return nil
 }
@@ -87,5 +89,4 @@ func setup_material(rc *OpenGLRenderingContext, material gigl.GLMaterial) error 
 // ----------------------------------------------------------------------------
 
 func prepare_material_alphabet_texture(rc *OpenGLRenderingContext, mtex *g2d.MaterialAlphabetTexture) {
-	// TODO(go4orward)
 }

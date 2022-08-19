@@ -1,20 +1,22 @@
 package g2d
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go4orward/gigl/common"
 )
 
 type MaterialAlphabetTexture struct {
-	font_family   string     // font family name  (USE FIXED-WIDTH FONT LIKE "Courier New")
-	font_size     int        // font size (12, 16, 21, 25, etc)
-	font_rgb      [3]float32 // font color
-	font_outlined bool       // flag to use outlined font
-	texture       any        // texture
-	texture_wh    [2]int     // texture size
-	alphabet_cwh  [2]float32 // character width & height of ALPHABET_STRING
-	err           error      //
+	font_family     string     // font family name  (USE FIXED-WIDTH FONT LIKE "Courier New")
+	font_size       int        // font size (12, 16, 21, 25, etc)
+	font_rgb        [3]float32 // font color
+	font_outlined   bool       // flag to use outlined font
+	texture         any        // texture
+	texture_wh      [2]int     // texture size
+	texture_loading bool       //
+	alphabet_cwh    [2]float32 // character width & height of ALPHABET_STRING
+	err             error      //
 }
 
 func NewMaterialAlphabetTexture(fontfamily string, fontsize int, color string, outlined bool) *MaterialAlphabetTexture {
@@ -31,6 +33,11 @@ func NewMaterialAlphabetTexture(fontfamily string, fontsize int, color string, o
 
 func (self *MaterialAlphabetTexture) MaterialSummary() string {
 	return fmt.Sprintf("MaterialAlphabetTexture")
+}
+
+func (self *MaterialAlphabetTexture) LoadAlphabetTexture() {
+	self.texture_loading = true
+	self.err = errors.New("NOT IMPLEMENTED YET")
 }
 
 // ----------------------------------------------------------------------------
@@ -62,14 +69,31 @@ func (self *MaterialAlphabetTexture) GetTextureRGB() [3]float32 {
 }
 
 func (self *MaterialAlphabetTexture) SetTextureRGB(color any) {
+	switch color.(type) {
+	case string:
+		self.font_rgb = common.RGBFromHexString(color.(string))
+	case [3]float32:
+		self.font_rgb = color.([3]float32)
+	case []float32:
+		c := color.([]float32)
+		self.font_rgb = [3]float32{c[0], c[1], c[2]}
+	}
 }
 
-func (self *MaterialAlphabetTexture) IsTextureReady() bool {
-	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+func (self *MaterialAlphabetTexture) IsReady() bool {
+	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
 }
 
-func (self *MaterialAlphabetTexture) IsTextureLoading() bool {
-	return false
+func (self *MaterialAlphabetTexture) IsLoaded() bool {
+	return (self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
+}
+
+func (self *MaterialAlphabetTexture) IsLoading() bool {
+	return self.texture_loading
+}
+
+func (self *MaterialAlphabetTexture) SetError(err error) {
+	self.err = err
 }
 
 // ----------------------------------------------------------------------------

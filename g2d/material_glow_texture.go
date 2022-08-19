@@ -58,14 +58,23 @@ func (self *MaterialGlowTexture) GetTextureRGB() [3]float32 {
 }
 
 func (self *MaterialGlowTexture) SetTextureRGB(color any) {
+	switch color.(type) {
+	case string:
+		self.glow_rgb = common.RGBFromHexString(color.(string))
+	case [3]float32:
+		self.glow_rgb = color.([3]float32)
+	case []float32:
+		c := color.([]float32)
+		self.glow_rgb = [3]float32{c[0], c[1], c[2]}
+	}
 }
 
 func (self *MaterialGlowTexture) IsReady() bool {
-	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+	return (self.texture != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
 }
 
 func (self *MaterialGlowTexture) IsLoaded() bool {
-	return (self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0)
+	return (self.pixbuf != nil && self.texture_wh[0] > 0 && self.texture_wh[1] > 0 && self.err == nil)
 }
 
 func (self *MaterialGlowTexture) IsLoading() bool {
